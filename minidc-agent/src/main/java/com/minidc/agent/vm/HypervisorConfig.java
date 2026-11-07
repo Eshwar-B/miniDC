@@ -18,10 +18,13 @@ public class HypervisorConfig {
             AgentProperties properties,
             OsDetector osDetector,
             LibvirtDriver libvirtDriver,
-            VirtualBoxDriver virtualBoxDriver
+            VirtualBoxDriver virtualBoxDriver,
+            DockerDriver dockerDriver
     ) {
         String choice = properties.hypervisor();
-        if ("virtualbox".equalsIgnoreCase(choice)) {
+        if ("docker".equalsIgnoreCase(choice)) {
+            return dockerDriver;
+        } else if ("virtualbox".equalsIgnoreCase(choice)) {
             return virtualBoxDriver;
         } else if ("libvirt".equalsIgnoreCase(choice)) {
             return libvirtDriver;

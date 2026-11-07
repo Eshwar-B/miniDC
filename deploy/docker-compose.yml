@@ -1,42 +1,69 @@
-version: '3.8'
-
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: minidc-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: minidc
       POSTGRES_USER: minidc
       POSTGRES_PASSWORD: change-me
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30"]
+    ports: ["5432:5432"]
+    volumes: ["pg-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minidc"]
+      interval: 5s
+      retries: 10
 
   guacd:
-    image: guacamole/guacd:latest
-    container_name: minidc-guacd
+    image: guacamole/guacd
     restart: unless-stopped
-    ports:
-      - "4822:4822"
 
   guacamole:
-    image: guacamole/guacamole:latest
-    container_name: minidc-guacamole
+    image: guacamole/guacamole
     restart: unless-stopped
-    depends_on:
-      - guacd
-    ports:
-      # Mapped to host port 8081 to avoid clashing with minidc-server dev port 8080
-      - "8081:8080"
+    depends_on: [guacd]
     environment:
       GUACD_HOSTNAME: guacd
-      GUACD_PORT: 4822
-      # NOTE: Verify exact environment variable syntax against guacamole-auth-json documentation
+      EXTENSIONS: auth-json
       JSON_SECRET_KEY: "00112233445566778899aabbccddeeff"
-      EXTENSIONS: "auth-json"
+    ports: ["8081:8080"]
+
+  server:
+    build: { context: .., dockerfile: minidc-server/Dockerfile }
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/minidc
+      SPRING_DATASOURCE_USERNAME: minidc
+      SPRING_DATASOURCE_PASSWORD: change-me
+      SPRING_PROFILES_ACTIVE: dev
+      MINIDC_GUAC_SECRET: "00112233445566778899aabbccddeeff"
+      MINIDC_JWT_SECRET: "change-me-change-me-change-me-32"
+    ports: ["8080:8080"]
+
+  desktop-image:
+    profiles: ["demo"]
+    build: { context: ./desktop }
+    image: minidc-desktop:latest
+    entrypoint: ["true"]
+
+  agent:
+    profiles: ["demo"]
+    build: { context: .., dockerfile: minidc-agent/Dockerfile }
+    restart: unless-stopped
+    depends_on: [server, desktop-image]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      MINIDC_SERVER_URL: ws://server:8080/ws/agent
+      MINIDC_NODE_ID: "<node id from portal>"
+      MINIDC_AGENT_TOKEN: "<token from portal>"
+      MINIDC_HYPERVISOR: docker
+      MINIDC_PROBE_HOST: host.docker.internal
+      MINIDC_BIND_ADDRESS: 0.0.0.0
+      MINIDC_DRY_RUN: "false"
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
 
 volumes:
-  pgdata:
-
+  pg-data:

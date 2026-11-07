@@ -18,7 +18,9 @@ public record AgentProperties(
         String leasesDir,
         int reserveRamPercent,
         String portRange,
-        boolean dryRun
+        boolean dryRun,
+        String dockerImage,
+        String probeHost
 ) {
     public AgentProperties {
         if (bindAddress == null || bindAddress.isBlank()) {
@@ -38,6 +40,12 @@ public record AgentProperties(
         }
         if (leasesDir == null || leasesDir.isBlank()) {
             leasesDir = "./data/leases";
+        }
+        if (dockerImage == null || dockerImage.isBlank()) {
+            dockerImage = "minidc-desktop:latest";
+        }
+        if (probeHost == null || probeHost.isBlank()) {
+            probeHost = "127.0.0.1";
         }
     }
 }

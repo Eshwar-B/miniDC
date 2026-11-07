@@ -12,4 +12,6 @@ minidc:
   reserve-ram-percent: 25
   port-range: 33000-33999
   dry-run: true
+  docker-image: minidc-desktop:latest
+  probe-host: 127.0.0.1
 

@@ -1,6 +1,6 @@
 # MiniDC – Sandbox Lease Platform: Complete Build Documentation
 
-Working name: MiniDC. Turns idle Linux laptops and PCs into mini datacenters. A lender offers resources; a borrower gets a clean, isolated Linux desktop VM on the lender's machine, streamed to a browser. Version 1.1, November 2026 (adds Windows lenders, HypervisorDriver, VirtualBox backend). This document supersedes the earlier RAM-sharing document.
+Working name: MiniDC. Turns idle Linux laptops and PCs into mini datacenters. A lender offers resources; a borrower gets a clean, isolated Linux desktop VM on the lender's machine, streamed to a browser. Version 1.2, November 2026 (adds Windows lenders, HypervisorDriver, VirtualBox backend, DockerDriver demo mode, and PostgreSQL 16 embedded/Docker deployment). This document supersedes the earlier RAM-sharing document.
 
 ## 1. Overview
 
@@ -71,7 +71,12 @@ Components:
 - Testing: JUnit 5, Mockito, Testcontainers (PostgreSQL), Spring Boot Test.
 
 * Windows lender backend: VirtualBox 7.x (`VBoxManage`), PowerShell, Windows Firewall, `jpackage --type msi`.
-* Hypervisor choice per node: `minidc.hypervisor: libvirt | virtualbox` in the agent config. VirtualBox also runs on Linux, so one driver can serve both OSes if KVM is unavailable.
+* Hypervisor choice per node: `minidc.hypervisor: libvirt | virtualbox | docker` in the agent config.
+
+- Container runtime for local, demo, and pilot deployments: Docker (Desktop on a laptop, Engine on Linux), Docker Compose v2.
+- Build in containers: multi-stage Dockerfiles (`node:20`, `maven:3-eclipse-temurin-21`, `eclipse-temurin:21-jre`), so no JDK, Maven, or Node needs to be installed on the host.
+- Third hypervisor backend: `DockerDriver` (desktop container instead of a VM), for demos and trusted groups only.
+- Hypervisor choice per node: `minidc.hypervisor: libvirt | virtualbox | docker`.
 
 ## 5. Repository layout (Maven multi-module)
 
@@ -95,15 +100,18 @@ minidc/
 
 ## 6. Prerequisites and setup
 
-### 6.1 Control server machine (any always-on Linux box)
+### 6.1 Control server machine
+
+Any always-on machine with Docker. Nothing else is required.
 
 ```bash
-sudo apt update
-sudo apt install -y openjdk-21-jre docker.io docker-compose-plugin postgresql-client
-sudo systemctl enable --now docker
-cd deploy && docker compose up -d      # postgres, guacd, guacamole
-java -jar minidc-server.jar --spring.config.location=application.yml
+git clone <repo> && cd minidc
+docker compose -f deploy/docker-compose.yml up -d --build     # postgres, guacd, guacamole, server
+docker compose -f deploy/docker-compose.yml ps
+curl http://localhost:8080/actuator/health
 ```
+
+Without Docker for the server (optional): JDK 21 and Maven, then `mvn -q -DskipTests package` and `java -jar minidc-server/target/minidc-server-*.jar`.
 
 ### 6.2 Linux lender machine (Ubuntu or Debian family)
 
@@ -152,7 +160,78 @@ Corporate-managed laptops, strict antivirus, or disabled virtualization can bloc
 
 ## 7. Data model (PostgreSQL)
 
-`db/migration/V1__init.sql`:
+### 7.0 Database: PostgreSQL 16 (decision)
+
+PostgreSQL 16 is the database for all environments. It is free and open source. MySQL is not used.
+
+Why PostgreSQL:
+- Native `uuid` and `UUID[]` match the entities with no extra mapping.
+- `TIMESTAMPTZ` avoids time zone mistakes in lease expiry.
+- Transactional DDL: a failed Flyway migration rolls back fully.
+- `SELECT ... FOR UPDATE` row locking for the capacity check (`@Lock(PESSIMISTIC_WRITE)`).
+
+Rules:
+- All times stored in UTC. Entities use `Instant`. Set `spring.jpa.properties.hibernate.jdbc.time_zone=UTC`.
+- Flyway is the only way to change the schema (`ddl-auto: validate`).
+- Backup: `docker exec minidc-postgres pg_dump -U minidc minidc > backup.sql`. Restore: `docker exec -i minidc-postgres psql -U minidc minidc < backup.sql`.
+- Low-RAM hosts (1 GB): `shared_buffers=64MB`, `max_connections=30`.
+
+Where PostgreSQL runs:
+
+| Environment | How | Extra install |
+|---|---|---|
+| Developer laptop, quick start | Embedded PostgreSQL (7.1), profile `dev` | none beyond Java 21 and Maven |
+| Developer laptop or demo with Docker | `postgres:16` container (7.2) | Docker Desktop (already present) |
+| Pilot and later | Same compose file on an always-on Linux machine with Docker Engine | Docker Engine |
+| Tests | Testcontainers `PostgreSQLContainer<>("postgres:16")`, `@Testcontainers(disabledWithoutDocker = true)` | Docker |
+
+### 7.1 Embedded PostgreSQL (dev profile, nothing installed system-wide)
+
+Real PostgreSQL binaries come inside a Maven dependency and run as a child process of the server. Delete `./data/pg` to remove everything. Check the latest version of the library and its builder API before use.
+
+`minidc-server/pom.xml`:
+
+```xml
+<dependency>
+  <groupId>io.zonky.test</groupId>
+  <artifactId>embedded-postgres</artifactId>
+  <version><!-- latest 2.x, check Maven Central --></version>
+  <scope>runtime</scope>
+</dependency>
+```
+
+`config/EmbeddedPgConfig.java`:
+
+```java
+@Configuration
+@Profile("embedded")
+public class EmbeddedPgConfig {
+  @Bean(destroyMethod = "close")
+  EmbeddedPostgres embeddedPostgres() throws IOException {
+    return EmbeddedPostgres.builder()
+        .setDataDirectory(Path.of("./data/pg"))
+        .setCleanDataDirectory(false)      // keep data between runs
+        .setPort(5432)
+        .start();
+  }
+  @Bean
+  DataSource dataSource(EmbeddedPostgres pg) {
+    return pg.getPostgresDatabase();       // db "postgres", user "postgres"
+  }
+}
+```
+
+Run: `java -jar minidc-server.jar --spring.profiles.active=dev,embedded`. Flyway runs on this DataSource as usual. Profile `embedded` and the Docker Postgres of 7.2 are mutually exclusive.
+
+### 7.2 PostgreSQL in Docker
+
+Settings for the Docker database:
+
+- `spring.datasource.url: jdbc:postgresql://localhost:5432/minidc` (from the host) or `jdbc:postgresql://postgres:5432/minidc` (from another container)
+- Maven: `org.postgresql:postgresql` (runtime), `flyway-core`, `flyway-database-postgresql`, `org.testcontainers:postgresql` (test).
+- Compose service name `postgres`, container name `minidc-postgres`, volume `pg-data` (data survives `docker compose down`; `docker compose down -v` deletes it).
+
+### 7.3 Schema (`db/migration/V1__init.sql`)
 
 ```sql
 CREATE TABLE users (
@@ -467,6 +546,86 @@ Step 7, host limits on Windows: leave at least 25% or 2 GB RAM free (whichever i
 
 Step 8, on agent start: run `VBoxManage list vms` and destroy every `lease-*` VM not in the server's active list (same reconciliation as 11.5).
 
+### 11.9 DockerDriver (container desktop for demos and trusted groups)
+
+`DockerDriver implements HypervisorDriver`. It starts a desktop **container** (XFCE + xrdp) instead of a VM. It needs only Docker, so it works on a laptop that already runs Docker Desktop and avoids the VirtualBox versus Docker Desktop (WSL2/Hyper-V) conflict from 6.4.
+
+Differences from VM drivers:
+- Containers share a kernel, so isolation is weaker than a VM. On Docker Desktop they run inside Docker's own Linux VM, which still separates them from Windows files, but still treat this mode as demo and trusted-group only.
+- Starts in seconds, uses less RAM.
+- RAM, CPU, and process limits work. A per-container disk size limit is not reliable on Docker Desktop (`--storage-opt size=` needs specific storage drivers). Use a small `tmpfs` or a size-limited volume if disk limits matter, and state this limit in the UI.
+- Host limits come from the Docker VM allocation (Docker Desktop settings), not from the laptop's total RAM. Read them with `docker info --format "{{.MemTotal}} {{.NCPU}}"` in `hostInfo()`.
+
+Commands (`NAME=lease-<first8chars>`), run through the `Shell` helper:
+
+```bash
+# createVm
+docker run -d --name $NAME \
+  --memory <ramMb>m --memory-swap <ramMb>m --cpus <cores> --pids-limit 512 \
+  --shm-size 1g --security-opt no-new-privileges \
+  --label minidc.lease=<leaseId> \
+  -p <bindIP>:<hostPort>:3389 \
+  -e USER_NAME=<vmUser> -e PASSWORD=<vmPassword> \
+  minidc-desktop:latest
+
+# waitUntilReady: poll TCP <probeHost>:<hostPort> until it accepts (max 120 s)
+# listVms
+docker ps -a --filter "name=lease-" --format "{{.Names}}"
+# destroyVm
+docker rm -f -v $NAME
+# stats (optional, VM_STATS)
+docker stats --no-stream --format "{{.CPUPerc}} {{.MemUsage}}" $NAME
+```
+
+Rules:
+- Port range 33000-33999 as for other drivers; Docker publishes the port, so no Java `TcpForwarder` is needed.
+- `probeHost` property: `host.docker.internal` when the agent runs in a container (compose demo), `127.0.0.1` when the agent runs natively.
+- `no-new-privileges` can break `sudo` inside the desktop. Remove it if the desktop needs sudo, or drop sudo from the image.
+- Add `--cap-drop ALL --cap-add CHOWN --cap-add SETUID --cap-add SETGID ...` only after testing that xrdp still works; start without it.
+- On agent start: `docker ps -a --filter name=lease-`, destroy every `lease-*` container not in the server's active list (same reconciliation as 11.5).
+
+Desktop image `deploy/desktop/Dockerfile` (Debian base, because Ubuntu's Firefox is a snap and does not run in containers):
+
+```dockerfile
+FROM debian:bookworm-slim
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      xfce4 xfce4-terminal xorgxrdp xrdp dbus-x11 sudo firefox-esr \
+      git curl nano ca-certificates python3 openjdk-17-jdk-headless \
+    && rm -rf /var/lib/apt/lists/*
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+EXPOSE 3389
+ENTRYPOINT ["/entrypoint.sh"]
+```
+
+`deploy/desktop/entrypoint.sh`:
+
+```bash
+#!/bin/bash
+set -e
+useradd -m -s /bin/bash -G sudo "$USER_NAME"
+echo "$USER_NAME:$PASSWORD" | chpasswd
+echo "xfce4-session" > "/home/$USER_NAME/.xsession"
+chown "$USER_NAME:$USER_NAME" "/home/$USER_NAME/.xsession"
+service dbus start || true
+xrdp-sesman
+exec xrdp -n
+```
+
+Build once: `docker build -t minidc-desktop:latest deploy/desktop`. Test it alone first: `docker run --rm -p 33890:3389 -e USER_NAME=demo -e PASSWORD=demo12345 minidc-desktop:latest`, then connect with any RDP client to `localhost:33890`. Expect to tune packages and xrdp config; this image is untested boilerplate.
+
+Agent config for Docker mode:
+
+```yaml
+minidc:
+  hypervisor: docker
+  docker-image: minidc-desktop:latest
+  probe-host: host.docker.internal
+  bind-address: 0.0.0.0        # demo only; use a LAN/Tailscale IP otherwise
+  port-range: 33000-33999
+```
+
 ## 12. Control server implementation
 
 ### 12.1 Key classes
@@ -606,6 +765,10 @@ Windows lenders: guests use VirtualBox NAT (10.0.2.0/24 inside the VM, not bridg
 * Windows lender consent and safety: install needs the owner's admin approval; the agent shows a persistent tray icon while a lease runs, with a Stop button; it never touches the owner's files, accounts, or disk partitions; no clipboard, drag and drop, USB, or shared folders on the VM.
 * Supply chain on Windows: sign the MSI and agent binaries (code-signing certificate; unsigned installers trigger SmartScreen warnings), and pin the SHA-256 of the VirtualBox installer and golden image.
 
+- Docker mode: weaker isolation than VM mode (shared kernel). Use only for demos and trusted groups. Never mount the Docker socket on machines used by strangers. Run lease containers with `--memory`, `--cpus`, `--pids-limit`, `--security-opt no-new-privileges`, and no host mounts.
+- Compose secrets: replace every `change-me` value and both 32+ character secrets before any non-local deployment. Keep real values in an `.env` file excluded from git.
+- Postgres port 5432 should not be published beyond localhost in non-demo setups (use `127.0.0.1:5432:5432`).
+
 ## 16. Web UI pages
 
 - **Login / Register (invite code).**
@@ -640,6 +803,11 @@ Windows lenders: guests use VirtualBox NAT (10.0.2.0/24 inside the VM, not bridg
 * **Driver contract tests:** `LibvirtDriver` and `VirtualBoxDriver` run one shared test suite against the `HypervisorDriver` interface.
 * **Owner experience:** lease running while the owner browses, watches video, and works; confirm the host stays responsive at the default caps.
 
+- **Docker driver tests:** shared `HypervisorDriver` contract suite also runs against `DockerDriver` (needs Docker). Verify: container starts, port opens, memory limit visible in `docker inspect`, destroy leaves no container or volume, restart reconciliation removes orphan `lease-*` containers.
+- **Compose smoke test:** `docker compose up -d --build`, then `curl /actuator/health` returns `UP`, register and login through the API, create node, offer, lease through an agent test double.
+- **Embedded Postgres test:** start with `--spring.profiles.active=dev,embedded`; Flyway migration applies; restart keeps data in `./data/pg`.
+- **Demo rehearsal:** run the full script in 21.5 twice on a clean machine; time each step; record any manual fix.
+
 ## 19. Build plan
 
 **Phase 1 (week 1-2): VM engine by hand.** Build the golden image, create a VM with the commands in 11.3 manually, connect with an RDP client. Write the Java `Shell`, `VmManager.create/destroy`, and the forwarder; test from a `main` method.
@@ -653,6 +821,8 @@ Windows lenders: guests use VirtualBox NAT (10.0.2.0/24 inside the VM, not bridg
 **Phase 5 (week 9-10): UI.** React pages, live updates, countdown, kill switch.
 
 **Phase 6 (week 11-12): hardening and packaging.** `.deb` build, install script, security tests, docs, pilot with 3-5 real machines.
+
+**Phase 6b (week 12-13): Docker demo mode.** `DockerDriver`, `minidc-desktop` image, Dockerfiles for server and agent, `docker-compose.yml` with the `demo` profile, embedded Postgres dev profile, demo script rehearsal, short screen recording of the demo.
 
 **Phase 7 (week 13-15): Windows lenders.** Extract the `HypervisorDriver` interface (do this early, in phase 1, even if only `LibvirtDriver` exists), implement `VirtualBoxDriver`, Windows pre-checks, firewall rules, MSI packaging and signing, uninstall flow, Windows test matrix, pilot on 3-5 random Windows laptops.
 
@@ -668,14 +838,168 @@ Windows lenders: guests use VirtualBox NAT (10.0.2.0/24 inside the VM, not bridg
 * A random laptop is usable only with the owner's consent and admin approval. The agent installs a VM, not an OS on the disk, and removes everything at the end of the lease or on uninstall.
 * Unverified items to test early: VirtualBox silent-install flags, `clonemedium`/`multiattach` behavior, firewall rule effectiveness for the VM process, Guacamole JSON-auth encryption, libvirt and nftables commands, jpackage `--win-service` support on your JDK, WSL2 nesting (not used in v1).
 
+- Docker mode limits: weaker isolation than a VM; no reliable per-container disk cap on Docker Desktop; resources are capped by the Docker VM allocation, not the whole laptop; the agent container needs the Docker socket (high privilege).
+- Docker Desktop licensing: free for personal use, education, non-commercial open source, and small businesses (under 250 employees and under $10M annual revenue); larger commercial use needs a paid plan. Docker Engine on Linux has no such restriction. Re-check Docker's current terms before commercial use.
+- Docker Desktop on Windows uses WSL2 or Hyper-V; if the same laptop is also a VirtualBox lender, VirtualBox may fall back to the slower Hyper-V backend.
+- Unverified, test early: embedded-postgres library version and builder API, Guacamole image variable names, the `minidc-desktop` image (xrdp inside containers needs tuning), `host.docker.internal` reachability from the Guacamole container on your OS, cloudflared quick-tunnel terms.
+
+## 21. Deployment options and demo
+
+### 21.1 Options at a glance
+
+| Stage | Where | How |
+|---|---|---|
+| One-laptop demo | Your laptop, Docker Desktop | `docker compose --profile demo up --build` (server, Postgres, Guacamole, agent with DockerDriver) |
+| Two-device demo | Your laptop = control server; second laptop = lender | Same Wi-Fi. Second laptop installs the native agent (VirtualBox or KVM driver) or runs the agent container |
+| Trusted-group pilot | Old Linux machine, Docker Engine | Same compose file without the `demo` profile; Tailscale if networks differ |
+| Later | Free-tier VM or low-cost VPS | Same compose file; add TLS |
+
+### 21.2 Server Dockerfile (`minidc-server/Dockerfile`, build context = repo root)
+
+```dockerfile
+FROM node:20 AS ui
+WORKDIR /ui
+COPY minidc-ui/ .
+RUN npm install && npm run build
+
+FROM maven:3-eclipse-temurin-21 AS build
+WORKDIR /src
+COPY . .
+COPY --from=ui /ui/dist minidc-server/src/main/resources/static
+RUN mvn -q -DskipTests -pl minidc-server -am package
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /src/minidc-server/target/minidc-server-*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java","-Xmx256m","-XX:+UseSerialGC","-jar","/app/app.jar"]
+```
+
+### 21.3 Agent Dockerfile (`minidc-agent/Dockerfile`, demo mode only)
+
+```dockerfile
+FROM maven:3-eclipse-temurin-21 AS build
+WORKDIR /src
+COPY . .
+RUN mvn -q -DskipTests -pl minidc-agent -am package
+
+FROM eclipse-temurin:21-jre
+COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
+WORKDIR /app
+COPY --from=build /src/minidc-agent/target/minidc-agent-*.jar agent.jar
+ENTRYPOINT ["java","-Xmx128m","-jar","/app/agent.jar"]
+```
+
+### 21.4 `deploy/docker-compose.yml`
+
+Check the Guacamole image variable names against the image documentation before first use.
+
+```yaml
+services:
+  postgres:
+    image: postgres:16
+    container_name: minidc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: minidc
+      POSTGRES_USER: minidc
+      POSTGRES_PASSWORD: change-me
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30"]
+    ports: ["5432:5432"]
+    volumes: ["pg-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minidc"]
+      interval: 5s
+      retries: 10
+
+  guacd:
+    image: guacamole/guacd
+    restart: unless-stopped
+
+  guacamole:
+    image: guacamole/guacamole
+    restart: unless-stopped
+    depends_on: [guacd]
+    environment:
+      GUACD_HOSTNAME: guacd
+      EXTENSIONS: auth-json
+      JSON_SECRET_KEY: "00112233445566778899aabbccddeeff"
+    ports: ["8081:8080"]
+
+  server:
+    build: { context: .., dockerfile: minidc-server/Dockerfile }
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/minidc
+      SPRING_DATASOURCE_USERNAME: minidc
+      SPRING_DATASOURCE_PASSWORD: change-me
+      SPRING_PROFILES_ACTIVE: dev
+      MINIDC_GUAC_SECRET: "00112233445566778899aabbccddeeff"
+      MINIDC_JWT_SECRET: "change-me-change-me-change-me-32"
+    ports: ["8080:8080"]
+
+  desktop-image:
+    profiles: ["demo"]
+    build: { context: ./desktop }
+    image: minidc-desktop:latest
+    entrypoint: ["true"]
+
+  agent:
+    profiles: ["demo"]
+    build: { context: .., dockerfile: minidc-agent/Dockerfile }
+    restart: unless-stopped
+    depends_on: [server, desktop-image]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      MINIDC_SERVER_URL: ws://server:8080/ws/agent
+      MINIDC_NODE_ID: "<node id from portal>"
+      MINIDC_AGENT_TOKEN: "<token from portal>"
+      MINIDC_HYPERVISOR: docker
+      MINIDC_PROBE_HOST: host.docker.internal
+      MINIDC_BIND_ADDRESS: 0.0.0.0
+      MINIDC_DRY_RUN: "false"
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
+
+volumes:
+  pg-data:
+```
+
+Notes:
+- The agent container mounts the Docker socket so it can start sibling desktop containers. That socket gives near-root control of Docker. Use this only on a demo machine you control, never for strangers.
+- In demo mode the node `address` registered in the portal is `host.docker.internal`, so the Guacamole container reaches the published port on the host.
+- First run order: start the stack without the agent, register the lender node in the portal to get the node ID and token, put them into the compose environment, then run `docker compose --profile demo up -d agent`.
+
+### 21.5 One-laptop demo script
+
+1. `docker compose -f deploy/docker-compose.yml up -d --build` and open `http://localhost:8080`.
+2. Log in as the dev admin and create two invite codes (Admin page).
+3. Window A: register as lender with invite 1, create a node, copy the node ID and token, start the agent (`--profile demo`), wait for status ONLINE.
+4. Lender: create an offer (for example 2048 MB RAM, 2 cores, 5 GB disk, 1 hour, manual approval).
+5. Window B (another browser profile, phone on the same Wi-Fi, or incognito): register as borrower with invite 2.
+6. Borrower: pick the offer and request a lease. Lender: approve.
+7. Borrower: click Open Desktop. The Linux desktop appears in the browser.
+8. Prove isolation and limits: `docker ps` shows `lease-...` with its memory limit; `docker stats --no-stream` shows usage; open a terminal in the desktop and run `free -m` to show the cap.
+9. End the lease (or let it expire). Run `docker ps -a` again: the container is gone.
+
+### 21.6 Showing the demo to someone on another network (optional)
+
+Run a temporary tunnel container: `docker run --rm cloudflare/cloudflared tunnel --url http://host.docker.internal:8080`. It prints a temporary public URL and needs no router changes. Check Cloudflare's current free terms. Anyone with the URL can reach the portal, so keep registration invite-only, share the URL briefly, and stop the container after the demo.
+
+### 21.7 Moving to the real VM mode
+
+Keep the same server and Postgres. On each lender, replace the agent container with the native agent (`.deb` or `.msi`) using `hypervisor: libvirt` or `hypervisor: virtualbox`. No server code changes; only the driver differs.
+
 ### Document history
 
 - 1.0: Linux lenders, KVM/libvirt, trusted groups, $0 stack.
 - 1.1: Windows lenders through VirtualBox, `HypervisorDriver` abstraction, Windows setup, firewall, packaging, tests, and build plan; fixed merged steps in 11.3.
+- 1.2: PostgreSQL 16 fixed as the database (embedded dev profile, Docker, Testcontainers), `DockerDriver` for demos, Docker Compose deployment, Dockerfiles, demo script, security, testing, and plan updates.
 
+## 22. Repository Remote & Git Setup
 
-this is my git repo: 
-
+```bash
 echo "# miniDC" >> README.md
 git init
 git add README.md
@@ -683,3 +1007,4 @@ git commit -m "first commit"
 git branch -M main
 git remote add origin https://github.com/Eshwar-B/miniDC.git
 git push -u origin main
+```

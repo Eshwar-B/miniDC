@@ -1,6 +1,7 @@
 package com.minidc.server.lease;
 
 import com.minidc.common.enums.LeaseState;
+import com.minidc.common.ws.payload.CreateVmPayload;
 import com.minidc.server.audit.AuditService;
 import com.minidc.server.config.AppProperties;
 import com.minidc.server.crypto.AesGcmCrypto;
@@ -11,46 +12,64 @@ import com.minidc.server.ws.AgentCommandSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests validating state machine transition rules and guardrails for VM leases.
  */
-@ExtendWith(MockitoExtension.class)
 class LeaseStateMachineTest {
 
-    @Mock
     private LeaseRepository leaseRepository;
-    @Mock
     private OfferRepository offerRepository;
-    @Mock
     private NodeRepository nodeRepository;
-    @Mock
     private UserRepository userRepository;
-    @Mock
-    private AuditService auditService;
-    @Mock
+    private TestAuditService auditService;
     private AesGcmCrypto aesGcmCrypto;
-    @Mock
-    private AgentCommandSender agentCommandSender;
+    private TestAgentCommandSender agentCommandSender;
 
     private LeaseService leaseService;
-    private final AppProperties properties = new AppProperties("secret12345678901234567890123456", 12, "Y2hhbmdlLW1lLWNoYW5nZS1tZS1jaGFuZ2UtbWUtMzI=", "http://localhost:8080/guacamole", "secret", 1, true);
+    private Lease currentLease;
+
+    private final AppProperties properties = new AppProperties(
+            "secret12345678901234567890123456",
+            12,
+            "Y2hhbmdlLW1lLWNoYW5nZS1tZS1jaGFuZ2UtbWUtMzI=",
+            "http://localhost:8080/guacamole",
+            "secret",
+            1,
+            true
+    );
 
     @BeforeEach
     void setUp() {
+        aesGcmCrypto = new AesGcmCrypto(properties);
+        auditService = new TestAuditService();
+        agentCommandSender = new TestAgentCommandSender();
+
+        leaseRepository = proxy(LeaseRepository.class, (p, method, args) -> {
+            if ("findById".equals(method.getName())) {
+                return Optional.ofNullable(currentLease);
+            }
+            if ("save".equals(method.getName()) && args != null && args.length > 0) {
+                currentLease = (Lease) args[0];
+                return currentLease;
+            }
+            return null;
+        });
+
+        offerRepository = proxy(OfferRepository.class, (p, m, a) -> null);
+        nodeRepository = proxy(NodeRepository.class, (p, m, a) -> null);
+        userRepository = proxy(UserRepository.class, (p, m, a) -> null);
+
         leaseService = new LeaseService(
                 leaseRepository,
                 offerRepository,
@@ -64,6 +83,7 @@ class LeaseStateMachineTest {
     }
 
     private Lease createLease(LeaseState state) {
+        String encPassword = aesGcmCrypto.encrypt("plainPassword123");
         return new Lease(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -77,7 +97,7 @@ class LeaseStateMachineTest {
                 "lease-test",
                 null,
                 "minidc",
-                "encPassword",
+                encPassword,
                 null,
                 null,
                 Instant.now(),
@@ -89,71 +109,99 @@ class LeaseStateMachineTest {
     @Test
     @DisplayName("Valid transition: REQUESTED -> APPROVED")
     void testRequestedToApproved() {
-        Lease lease = createLease(LeaseState.REQUESTED);
-        when(leaseRepository.findById(lease.getId())).thenReturn(Optional.of(lease));
-        when(leaseRepository.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Lease result = leaseService.transition(lease.getId(), LeaseState.APPROVED, "approved");
+        currentLease = createLease(LeaseState.REQUESTED);
+        Lease result = leaseService.transition(currentLease.getId(), LeaseState.APPROVED, "approved");
         assertEquals(LeaseState.APPROVED, result.getState());
-        verify(auditService).log(any(), any(), any(), org.mockito.ArgumentMatchers.eq("LEASE_APPROVED"), org.mockito.ArgumentMatchers.eq("approved"));
+        assertEquals("LEASE_APPROVED", auditService.lastEvent);
     }
 
     @Test
     @DisplayName("Valid transition: APPROVED -> PROVISIONING triggers create VM command")
     void testApprovedToProvisioning() {
-        Lease lease = createLease(LeaseState.APPROVED);
-        when(leaseRepository.findById(lease.getId())).thenReturn(Optional.of(lease));
-        when(leaseRepository.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(aesGcmCrypto.decrypt("encPassword")).thenReturn("plainPass");
-
-        Lease result = leaseService.transition(lease.getId(), LeaseState.PROVISIONING, "start provisioning");
+        currentLease = createLease(LeaseState.APPROVED);
+        Lease result = leaseService.transition(currentLease.getId(), LeaseState.PROVISIONING, "start provisioning");
         assertEquals(LeaseState.PROVISIONING, result.getState());
-        verify(agentCommandSender).sendCreateVm(any(), any());
+        assertNotNull(agentCommandSender.lastCreateVmPayload);
+        assertEquals(currentLease.getId(), agentCommandSender.lastCreateVmPayload.leaseId());
     }
 
     @Test
     @DisplayName("Valid transition: PROVISIONING -> ACTIVE")
     void testProvisioningToActive() {
-        Lease lease = createLease(LeaseState.PROVISIONING);
-        when(leaseRepository.findById(lease.getId())).thenReturn(Optional.of(lease));
-        when(leaseRepository.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Lease result = leaseService.transition(lease.getId(), LeaseState.ACTIVE, "vm ready");
+        currentLease = createLease(LeaseState.PROVISIONING);
+        Lease result = leaseService.transition(currentLease.getId(), LeaseState.ACTIVE, "vm ready");
         assertEquals(LeaseState.ACTIVE, result.getState());
     }
 
     @Test
     @DisplayName("Valid transition: ACTIVE -> ENDED triggers destroy VM command")
     void testActiveToEnded() {
-        Lease lease = createLease(LeaseState.ACTIVE);
-        when(leaseRepository.findById(lease.getId())).thenReturn(Optional.of(lease));
-        when(leaseRepository.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Lease result = leaseService.transition(lease.getId(), LeaseState.ENDED, "finished");
+        currentLease = createLease(LeaseState.ACTIVE);
+        Lease result = leaseService.transition(currentLease.getId(), LeaseState.ENDED, "finished");
         assertEquals(LeaseState.ENDED, result.getState());
-        verify(agentCommandSender).sendDestroyVm(lease.getNodeId(), lease.getId());
+        assertEquals(currentLease.getId(), agentCommandSender.lastDestroyVmLeaseId);
     }
 
     @Test
     @DisplayName("Invalid transition: REQUESTED -> ACTIVE throws InvalidStateException")
     void testInvalidTransitionRequestedToActive() {
-        Lease lease = createLease(LeaseState.REQUESTED);
-        when(leaseRepository.findById(lease.getId())).thenReturn(Optional.of(lease));
-
+        currentLease = createLease(LeaseState.REQUESTED);
         assertThrows(InvalidStateException.class, () ->
-                leaseService.transition(lease.getId(), LeaseState.ACTIVE, "invalid")
+                leaseService.transition(currentLease.getId(), LeaseState.ACTIVE, "invalid")
         );
     }
 
     @Test
     @DisplayName("Invalid transition: ENDED -> ACTIVE throws InvalidStateException")
     void testInvalidTransitionEndedToActive() {
-        Lease lease = createLease(LeaseState.ENDED);
-        when(leaseRepository.findById(lease.getId())).thenReturn(Optional.of(lease));
-
+        currentLease = createLease(LeaseState.ENDED);
         assertThrows(InvalidStateException.class, () ->
-                leaseService.transition(lease.getId(), LeaseState.ACTIVE, "invalid")
+                leaseService.transition(currentLease.getId(), LeaseState.ACTIVE, "invalid")
         );
     }
-}
 
+    @SuppressWarnings("unchecked")
+    private static <T> T proxy(Class<T> iface, InvocationHandler handler) {
+        return (T) Proxy.newProxyInstance(iface.getClassLoader(), new Class<?>[]{iface}, handler);
+    }
+
+    private static class TestAuditService extends AuditService {
+        String lastEvent;
+        String lastDetail;
+
+        TestAuditService() {
+            super(null);
+        }
+
+        @Override
+        public void log(UUID actorId, UUID leaseId, UUID nodeId, String event, String detail) {
+            this.lastEvent = event;
+            this.lastDetail = detail;
+        }
+    }
+
+    private static class TestAgentCommandSender extends AgentCommandSender {
+        UUID lastCreateVmNodeId;
+        CreateVmPayload lastCreateVmPayload;
+        UUID lastDestroyVmNodeId;
+        UUID lastDestroyVmLeaseId;
+
+        TestAgentCommandSender() {
+            super(null, null);
+        }
+
+        @Override
+        public boolean sendCreateVm(UUID nodeId, CreateVmPayload payload) {
+            this.lastCreateVmNodeId = nodeId;
+            this.lastCreateVmPayload = payload;
+            return true;
+        }
+
+        @Override
+        public boolean sendDestroyVm(UUID nodeId, UUID leaseId) {
+            this.lastDestroyVmNodeId = nodeId;
+            this.lastDestroyVmLeaseId = leaseId;
+            return true;
+        }
+    }
+}
