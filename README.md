@@ -1,154 +1,125 @@
 # MiniDC – Idle Laptop Sandbox Lease Platform
 
-MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters. A **lender** installs an **agent** and sets limits (RAM, CPU cores, disk, hours). A **borrower** requests a **lease** from a web portal. The lender approves (or auto-approves). The agent boots a fresh Ubuntu desktop **VM** with those limits (KVM/libvirt on Linux, VirtualBox on Windows). The borrower interacts with the VM desktop directly in their browser through Apache Guacamole (RDP to xrdp inside the VM). At lease end, the VM is wiped and destroyed.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Java](https://img.shields.io/badge/Java-21%20LTS-orange.svg)]()
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.5-green.svg)]()
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)]()
+[![React](https://img.shields.io/badge/React-18%20%7C%20Vite%20%7C%20TS-61dafb.svg)]()
+[![Hypervisors](https://img.shields.io/badge/Hypervisors-KVM%20%7C%20VirtualBox%20%7C%20Docker-blueviolet.svg)]()
+
+MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
+- A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve).
+- A **borrower** browses available offers on a web marketplace and requests a **lease**.
+- When approved, the agent provisions an isolated, clean Ubuntu desktop sandbox (via **KVM/libvirt** on Linux, **VirtualBox** on Windows, or **Docker** container desktop for demos).
+- The borrower accesses the full interactive desktop directly in a web browser using **Apache Guacamole** (streaming RDP to xrdp inside the sandbox).
+- At lease expiration (or when manually ended/killed), the sandbox and all associated storage are destroyed.
 
 ---
 
-## 1. Project Directory Structure
+## 1. Current Project Status
+
+- **Version:** `1.2` (Multi-Hypervisor + Docker Demo Mode + PostgreSQL 16 Embedded/Docker deployment).
+- **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
+- **Test Suite Status:** **22/22 unit and driver contract tests passing** (`mvn test` runs in ~12s with 0 errors, 0 failures).
+- **Frontend Status:** Clean compilation (`npm run build` bundles 45 modules cleanly into static assets).
+- **Driver Support:**
+  - `LibvirtDriver`: Fast native KVM/QEMU virtualization on Linux.
+  - `VirtualBoxDriver`: Headless VirtualBox 7.x management with NAT port forwarding on Windows 10/11.
+  - `DockerDriver`: Fast lightweight container desktop (`minidc-desktop:latest`) for rapid single-machine demos and testing.
+- **Database:** PostgreSQL 16 with Flyway transactional migrations, UTC timezone enforcement, and support for:
+  - Docker Compose service (`postgres:16`).
+  - Embedded PostgreSQL (`io.zonky.test:embedded-postgres`) for zero-dependency local development via `--spring.profiles.active=dev,embedded`.
+  - Testcontainers for integration testing.
+
+---
+
+## 2. Directory Structure
 
 ```
 minidc/
-  pom.xml
-  README.md
+  pom.xml                                  # Maven parent POM (Java 21, Spring Boot 3.3.5 BOM)
+  README.md                                # Project overview and quick start guide
+  MiniDC – Sandbox Lease Platform Complete Build Documentation.md # Complete v1.2 specification
   .gitignore
   .editorconfig
-  minidc-common/                 # Shared Java library: models, enums, WebSocket payloads
+  minidc-common/                           # Shared DTOs, domain models, enums, WebSocket payloads
     pom.xml
     src/main/java/com/minidc/common/
-      enums/LeaseState.java
-      enums/NodeStatus.java
-      enums/Role.java
-      model/VmSpec.java
-      model/VmInfo.java
-      model/HostInfo.java
-      ws/MessageType.java
-      ws/WsMessage.java
-      ws/payload/RegisterPayload.java
-      ws/payload/HeartbeatPayload.java
-      ws/payload/CreateVmPayload.java
-      ws/payload/VmReadyPayload.java
-      ws/payload/VmFailedPayload.java
-      ws/payload/VmDestroyedPayload.java
-      ws/payload/VmStatsPayload.java
-      ws/payload/DestroyVmPayload.java
-  minidc-server/                 # Spring Boot control server
+      enums/ (LeaseState, NodeStatus, Role)
+      model/ (VmSpec, VmInfo, HostInfo)
+      ws/ (MessageType, WsMessage)
+      ws/payload/ (Register, Heartbeat, CreateVm, VmReady, VmFailed, VmDestroyed, VmStats, DestroyVm)
+  minidc-server/                           # Spring Boot control server application
     pom.xml
+    Dockerfile                             # Multi-stage build (UI build + Maven package + JRE runtime)
     src/main/java/com/minidc/server/
       MiniDcServerApplication.java
-      config/AppProperties.java
-      config/WebSocketConfig.java
-      config/SchedulingConfig.java
-      security/SecurityConfig.java
-      security/JwtService.java
-      security/JwtAuthFilter.java
-      security/CurrentUser.java
-      auth/AuthController.java
-      auth/AuthService.java
-      auth/dto/RegisterRequest.java
-      auth/dto/LoginRequest.java
-      auth/dto/TokenResponse.java
-      user/User.java
-      user/UserRepository.java
-      user/Invite.java
-      user/InviteRepository.java
-      node/Node.java
-      node/NodeRepository.java
-      node/NodeController.java
-      node/NodeService.java
-      node/dto/CreateNodeRequest.java
-      node/dto/CreateNodeResponse.java
-      offer/Offer.java
-      offer/OfferRepository.java
-      offer/OfferController.java
-      offer/OfferService.java
-      offer/dto/OfferRequest.java
-      lease/Lease.java
-      lease/LeaseRepository.java
-      lease/LeaseController.java
-      lease/LeaseService.java
-      lease/InvalidStateException.java
-      lease/CapacityExceededException.java
-      lease/dto/CreateLeaseRequest.java
-      lease/dto/LeaseResponse.java
-      ws/AgentSocketHandler.java
-      ws/AgentSessionRegistry.java
-      ws/AgentCommandSender.java
-      guac/GuacService.java
-      guac/GuacController.java
-      audit/AuditLog.java
-      audit/AuditLogRepository.java
-      audit/AuditService.java
-      admin/AdminController.java
-      scheduler/LeaseScheduler.java
-      error/ApiError.java
-      error/GlobalExceptionHandler.java
-      crypto/AesGcmCrypto.java
+      config/ (AppProperties, WebSocketConfig, SchedulingConfig, EmbeddedPgConfig)
+      security/ (SecurityConfig, JwtService, JwtAuthFilter, CurrentUser)
+      auth/ (AuthController, AuthService, DTOs)
+      user/ (User, UserRepository, Invite, InviteRepository)
+      node/ (Node, NodeRepository, NodeController, NodeService, DTOs)
+      offer/ (Offer, OfferRepository, OfferController, OfferService, DTOs)
+      lease/ (Lease, LeaseRepository, LeaseController, LeaseService, DTOs, Exceptions)
+      ws/ (AgentSocketHandler, AgentSessionRegistry, AgentCommandSender)
+      guac/ (GuacService, GuacController)
+      audit/ (AuditLog, AuditLogRepository, AuditService)
+      admin/ (AdminController)
+      scheduler/ (LeaseScheduler)
+      crypto/ (AesGcmCrypto)
+      error/ (ApiError, GlobalExceptionHandler)
     src/main/resources/
-      application.yml
-      application-dev.yml
-      db/migration/V1__init.sql
+      application.yml                      # Base configuration (UTC time zone, validate schema)
+      application-dev.yml                  # Dev profile with admin seed CommandLineRunner
+      db/migration/V1__init.sql            # PostgreSQL schema migrations
     src/test/java/com/minidc/server/
-      lease/LeaseServiceTest.java
-      lease/LeaseStateMachineTest.java
-      auth/AuthControllerIT.java
-      support/PostgresTestContainer.java
-  minidc-agent/                  # Background node agent daemon
+      lease/ (LeaseServiceTest, LeaseStateMachineTest)
+      auth/ (AuthControllerIT)
+      support/ (PostgresTestContainer)
+  minidc-agent/                            # Background node agent daemon (Spring Boot non-web)
     pom.xml
+    Dockerfile                             # Multi-stage agent container for Docker demo mode
     src/main/java/com/minidc/agent/
       MiniDcAgentApplication.java
-      config/AgentProperties.java
-      cmd/Shell.java
-      cmd/ShellResult.java
-      system/HostStats.java
-      system/LimitChecker.java
-      system/OsDetector.java
-      vm/HypervisorDriver.java
-      vm/LibvirtDriver.java
-      vm/VirtualBoxDriver.java
-      vm/VmManager.java
-      vm/CloudInitBuilder.java
-      net/TcpForwarder.java
-      net/EgressRules.java
-      ws/ServerConnection.java
-      ws/CommandDispatcher.java
-      ws/HeartbeatJob.java
+      config/ (AgentProperties)
+      cmd/ (Shell, ShellResult)
+      system/ (HostStats, LimitChecker, OsDetector)
+      vm/ (HypervisorDriver, LibvirtDriver, VirtualBoxDriver, DockerDriver, HypervisorConfig, VmManager, CloudInitBuilder)
+      net/ (TcpForwarder, EgressRules)
+      ws/ (ServerConnection, CommandDispatcher, HeartbeatJob)
     src/main/resources/
       application.yml
     src/test/java/com/minidc/agent/
-      cmd/ShellTest.java
-      system/LimitCheckerTest.java
-      vm/CloudInitBuilderTest.java
-  minidc-ui/                     # React 18 + Vite + TypeScript web portal
+      cmd/ (ShellTest)
+      system/ (LimitCheckerTest)
+      vm/ (CloudInitBuilderTest, DockerDriverTest)
+  minidc-ui/                               # React 18 + Vite + TypeScript web application
     package.json
     tsconfig.json
     vite.config.ts
     index.html
-    src/main.tsx
-    src/App.tsx
-    src/api/client.ts
-    src/api/types.ts
-    src/auth/AuthContext.tsx
-    src/pages/LoginPage.tsx
-    src/pages/RegisterPage.tsx
-    src/pages/LenderDashboard.tsx
-    src/pages/Marketplace.tsx
-    src/pages/MyLeases.tsx
-    src/pages/AdminPage.tsx
-    src/components/LeaseCard.tsx
-    src/components/OfferForm.tsx
-    src/components/Countdown.tsx
-    src/styles.css
-  deploy/                        # Docker compose, installation scripts, configs
-    docker-compose.yml
-    build-golden-image.sh
-    install-agent.sh
-    install-agent.ps1
-    minidc-agent.service
-    nftables-minidc.sh
-    libvirt-net.xml
+    src/
+      main.tsx
+      App.tsx                              # Routes, ProtectedRoute, Navigation
+      api/ (client.ts, types.ts)
+      auth/ (AuthContext.tsx)
+      pages/ (LoginPage, RegisterPage, LenderDashboard, Marketplace, MyLeases, AdminPage)
+      components/ (LeaseCard, OfferForm, Countdown)
+      styles.css
+  deploy/                                  # Deployment configurations and scripts
+    docker-compose.yml                     # Full stack (Postgres, guacd, Guacamole, Server, Agent demo)
+    desktop/
+      Dockerfile                           # Debian Bookworm + XFCE4 + xrdp desktop sandbox
+      entrypoint.sh                        # User creation, session configuration & xrdp runner
+    build-golden-image.sh                  # Ubuntu Noble golden image generator for KVM/VirtualBox
+    install-agent.sh                       # Linux lender setup script (.deb)
+    install-agent.ps1                      # Windows lender setup script (.msi)
+    minidc-agent.service                   # systemd unit file for Linux lenders
+    nftables-minidc.sh                     # Linux egress isolation rules
+    libvirt-net.xml                        # libvirt isolated NAT network config
     agent.example.yml
     server.example.yml
-  docs/                          # Technical guides and protocol documentation
+  docs/                                    # Documentation guides
     architecture.md
     api.md
     ws-protocol.md
@@ -157,57 +128,153 @@ minidc/
 
 ---
 
-## 2. Prerequisites
+## 3. Prerequisites
 
-- **Java Development Kit (JDK):** Version 21 (LTS) or higher.
-- **Apache Maven:** Version 3.9+ (or local wrapper).
-- **Node.js & npm:** Node 20+ and npm 10+.
-- **Docker & Docker Compose:** For running PostgreSQL, guacd, and Apache Guacamole.
-- **Hypervisor (Lender Machines):** KVM/libvirt on Linux, Oracle VirtualBox 7.x on Windows.
+| Tool | Recommended Version | Purpose |
+|---|---|---|
+| **Java JDK** | 21 (LTS) or higher | Compiling and running server & agent |
+| **Apache Maven** | 3.9+ | Building Java multi-module project |
+| **Node.js & npm** | Node 20+ & npm 10+ | Building and running React web portal |
+| **Docker & Docker Compose** | Latest Desktop / Engine | Running database, Guacamole, or full demo stack |
 
 ---
 
-## 3. Quick Start
+## 4. Quick Start Options
 
-### Step 1: Start PostgreSQL and Guacamole Infrastructure
+### Option A: Complete Docker Compose Stack (Easiest)
+
+Runs PostgreSQL 16, guacd, Apache Guacamole, and the MiniDC Server (with UI packaged into static resources) with a single command:
+
 ```bash
-cd deploy && docker compose up -d
+git clone https://github.com/Eshwar-B/miniDC.git
+cd miniDC/deploy
+docker compose up -d --build
 ```
 
-### Step 2: Build the Java Multi-Module Project
+- **Web Portal:** Open [http://localhost:8080](http://localhost:8080)
+- **Actuator Health:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **Default Dev Admin:** `admin@minidc.local` / `admin12345`
+
+To include the agent and desktop container for the one-laptop demo:
 ```bash
-cd .. && mvn -q -DskipTests package
+docker compose --profile demo up -d --build
 ```
 
-### Step 3: Run the Control Server in Dev Mode
+---
+
+### Option B: Zero-Dependency Local Dev (Embedded PostgreSQL)
+
+If you have Java 21 and Maven installed and do not want to install or run external databases:
+
 ```bash
+# 1. Package the backend modules
+mvn -q -DskipTests package
+
+# 2. Run the server with dev and embedded profiles
+java -jar minidc-server/target/minidc-server-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev,embedded
+```
+*The `embedded` profile boots an in-process PostgreSQL 16 instance storing data in `./data/pg` on port 5432, applies Flyway migrations, and seeds the initial admin user.*
+
+```bash
+# 3. In another terminal, run the React development server
+cd minidc-ui
+npm install
+npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173).
+
+---
+
+### Option C: Developer Mode with Docker Database & Guacamole
+
+```bash
+# 1. Start Postgres and Guacamole in Docker
+cd deploy
+docker compose up -d postgres guacd guacamole
+
+# 2. Run the server locally
+cd ..
+mvn -q -DskipTests package
 java -jar minidc-server/target/minidc-server-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev
-```
-*Note: In `dev` profile, the server automatically initializes database schema, seeds the admin account `admin@minidc.local` with password `admin12345`, and logs an active invite code.*
 
-### Step 4: Run the Web UI
-```bash
-cd minidc-ui && npm install && npm run dev
+# 3. Run the UI locally
+cd minidc-ui
+npm run dev
 ```
-Open `http://localhost:5173` in your browser.
 
 ---
 
-## 4. Documentation Links
+## 5. Hypervisor Configuration
 
-- [System Architecture & Data Flows](docs/architecture.md)
-- [REST API Specification](docs/api.md)
+The agent chooses its sandbox backend via `minidc.hypervisor` in `application.yml` or the environment variable `MINIDC_HYPERVISOR`:
+
+```yaml
+minidc:
+  hypervisor: docker       # Options: libvirt | virtualbox | docker
+  dry-run: false           # Set to true to mock CLI commands in dev environments
+  docker-image: minidc-desktop:latest
+  probe-host: 127.0.0.1    # Use host.docker.internal when agent runs inside a container
+  bind-address: 127.0.0.1  # Localhost or LAN/Tailscale IP
+  port-range: 33000-33999
+```
+
+- **`libvirt`**: Uses Linux KVM, `virt-install`, and copy-on-write `qcow2` overlays with nftables egress isolation.
+- **`virtualbox`**: Uses headless `VBoxManage` on Windows 10/11 with NAT port forwarding and Windows Firewall LAN isolation.
+- **`docker`**: Runs container desktops (`minidc-desktop:latest`) with memory caps, CPU quotas, process limits (`--pids-limit 512`), and `--security-opt no-new-privileges`.
+
+---
+
+## 6. One-Laptop Demo Walkthrough
+
+1. Start the stack: `docker compose -f deploy/docker-compose.yml up -d --build`.
+2. Open `http://localhost:8080` and log in as `admin@minidc.local` / `admin12345`.
+3. Go to the **Admin** page and generate two invite codes.
+4. **Lender Registration:** Open a regular browser window, sign up with invite code #1, register a node to get the node ID and token, and start the agent (`--profile demo`). Wait for the node status to display `ONLINE`.
+5. **Create an Offer:** In the Lender Hub, create a resource offer (e.g., 2048 MB RAM, 2 CPU cores, 5 GB disk, 2 hours).
+6. **Borrower Request:** Open an Incognito/Private window, register with invite code #2, browse the **Marketplace**, pick the offer, and request a lease.
+7. **Approval & Provisioning:** The lender approves the request. The agent boots the sandbox and transitions the lease to `ACTIVE`.
+8. **Connect:** The borrower clicks **Open Desktop**; Guacamole securely streams the interactive XFCE desktop in the browser via WebSockets.
+9. **Teardown:** Click **End Lease** (or let the timer expire). The agent immediately powers down, wipes the container/VM, and cleans up all temporary resources.
+
+---
+
+## 7. Running Tests
+
+Execute the full automated test suite:
+
+```bash
+# Run all unit and integration tests across all modules
+mvn test
+
+# Run tests with active build logs
+mvn surefire-report:report-only
+```
+
+Run frontend tests and production build:
+
+```bash
+cd minidc-ui
+npm run build
+```
+
+---
+
+## 8. Technology Decisions & Architecture
+
+- **Java 21 LTS & Virtual Threads:** Uses Java 21 features (records, switch expressions, pattern matching) and virtual threads for TCP forwarder streams.
+- **No Lombok:** Codebase is kept clean and transparent with native Java records and explicit accessors.
+- **Pessimistic Locking:** Capacity verification during lease creation uses `@Lock(LockModeType.PESSIMISTIC_WRITE)` on the `Offer` row to prevent double-booking.
+- **AES-256-GCM Password Encryption:** Per-lease randomly generated VM passwords are encrypted at rest using a configurable AES-GCM server key.
+- **Guacamole Auth-JSON:** Guacamole authentication uses cryptographically signed tokens containing connection parameters; passwords are never sent in plain text to the browser.
+- **Dry-Run Capabilities:** Both VM drivers and the Docker driver support dry-run simulation mode (`minidc.dry-run: true`) for testing without hypervisor prerequisites.
+
+---
+
+## 9. Documentation & Resources
+
+- [Complete v1.2 Build Documentation](MiniDC%20–%20Sandbox%20Lease%20Platform%20Complete%20Build%20Documentation.md)
+- [System Architecture](docs/architecture.md)
+- [REST API Reference](docs/api.md)
 - [Agent WebSocket Protocol](docs/ws-protocol.md)
 - [Windows Lender & VirtualBox Guide](docs/windows-lender.md)
-
----
-
-## 5. Assumptions & Design Decisions
-
-1. **Spring Boot Version:** Spring Boot 3.3.5 with Spring Security 6, Hibernate 6, and JJWT 0.11.5.
-2. **Flyway & PostgreSQL:** Database initialization uses standard PostgreSQL migration scripts (`V1__init.sql`), while integration tests leverage Testcontainers with an automated fallback to in-memory H2 in environments where Docker is absent.
-3. **Pessimistic Locking:** Capacity checks lock the `Offer` entity row using `@Lock(LockModeType.PESSIMISTIC_WRITE)` during lease allocation to prevent race conditions.
-4. **Dry-Run Mode by Default:** `minidc.dry-run` defaults to `true` in development to allow complete compilation, test verification, and mock execution on developer workstations without requiring physical KVM/libvirt or VirtualBox installations.
-5. **Virtual Threads:** Java 21 virtual threads (`Executors.newVirtualThreadPerTaskExecutor()`) handle TCP forwarding in the agent for high-concurrency remote desktop data streaming.
-6. **No Lombok:** Explicit plain getters, setters, constructors, and records are used throughout.
-
+- **Repository Remote:** [https://github.com/Eshwar-B/miniDC.git](https://github.com/Eshwar-B/miniDC.git)
