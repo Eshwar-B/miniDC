@@ -9,25 +9,45 @@ import { MyLeases } from './pages/MyLeases';
 import { AdminPage } from './pages/AdminPage';
 import './styles.css';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({
+interface RouteProps {
+  children: React.ReactElement;
+  adminOnly?: boolean;
+}
+
+const ProtectedRoute: React.FC<RouteProps> = ({
   children,
   adminOnly = false,
 }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, token } = useAuth();
+  const location = useLocation();
 
-  if (isLoading) {
+  if (isLoading || (token && !user)) {
     return <div className="main-content"><p>Loading session...</p></div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (adminOnly && user?.role !== 'ADMIN') {
     return <Navigate to="/leases" replace />;
   }
 
-  return <>{children}</>;
+  return children;
+};
+
+const PublicRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="main-content"><p>Loading session...</p></div>;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/leases" replace />;
+  }
+
+  return children;
 };
 
 const Navigation: React.FC = () => {
@@ -75,8 +95,23 @@ export const App: React.FC = () => {
           <Navigation />
           <main className="main-content">
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/" element={<Navigate to="/leases" replace />} />
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <LoginPage />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <PublicRoute>
+                    <RegisterPage />
+                  </PublicRoute>
+                }
+              />
               <Route
                 path="/leases"
                 element={

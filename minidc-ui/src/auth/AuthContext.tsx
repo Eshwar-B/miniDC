@@ -49,13 +49,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (data: LoginRequest) => {
     const res = await api.login(data);
     localStorage.setItem('minidc_token', res.token);
+    setTokenProvider(() => res.token);
     setToken(res.token);
+    try {
+      const me = await api.getMe();
+      setUser(me);
+    } catch {
+      // User will be fetched by refreshUser
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (data: RegisterRequest) => {
     const res = await api.register(data);
     localStorage.setItem('minidc_token', res.token);
+    setTokenProvider(() => res.token);
     setToken(res.token);
+    try {
+      const me = await api.getMe();
+      setUser(me);
+    } catch {
+      // User will be fetched by refreshUser
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
