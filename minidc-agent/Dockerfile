@@ -8,3 +8,4 @@ COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
 WORKDIR /app
 COPY --from=build /src/minidc-agent/target/minidc-agent-*.jar agent.jar
 ENTRYPOINT ["java","-Xmx128m","-jar","/app/agent.jar"]
+

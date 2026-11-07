@@ -27,3 +27,4 @@ public class EmbeddedPgConfig {
         return pg.getPostgresDatabase();       // db "postgres", user "postgres"
     }
 }
+

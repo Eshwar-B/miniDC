@@ -14,3 +14,4 @@ WORKDIR /app
 COPY --from=build /src/minidc-server/target/minidc-server-*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java","-Xmx256m","-XX:+UseSerialGC","-jar","/app/app.jar"]
+

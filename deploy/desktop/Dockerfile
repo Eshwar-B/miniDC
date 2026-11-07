@@ -8,3 +8,4 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 3389
 ENTRYPOINT ["/entrypoint.sh"]
+

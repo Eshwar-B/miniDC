@@ -7,3 +7,4 @@ chown "$USER_NAME:$USER_NAME" "/home/$USER_NAME/.xsession"
 service dbus start || true
 xrdp-sesman
 exec xrdp -n
+
