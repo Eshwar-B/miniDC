@@ -1,0 +1,311 @@
+:root {
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --radius: 8px;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.5px;
+}
+.brand span {
+  color: var(--primary);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-links a {
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--border-color);
+  color: var(--text-main);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: #475569;
+}
+
+.btn-success {
+  background-color: var(--success);
+  color: #fff;
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-success { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+.badge-warning { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.badge-danger { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+.badge-info { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.badge-muted { background-color: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+
+.countdown-pill {
+  background-color: #0f172a;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.alert-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid var(--danger);
+  color: #fca5a5;
+}
+.alert-success {
+  background-color: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--success);
+  color: #6ee7b7;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background-color: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-main);
+  outline: none;
+}
+.form-group input[type="range"] {
+  width: 100%;
+}
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+.auth-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.dashboard-grid, .admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.lease-grid, .offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.lease-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.lease-card-header, .node-card-header, .offer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.lease-details p, .node-stats p, .offer-specs p {
+  font-size: 0.875rem;
+  margin-bottom: 0.35rem;
+  color: var(--text-muted);
+}
+.lease-details p strong, .node-stats p strong, .offer-specs p strong {
+  color: var(--text-main);
+}
+.lease-timer {
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+}
+.lease-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+.data-table th, .data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  font-size: 0.85rem;
+}
+.data-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.empty-card {
+  padding: 3rem 1.5rem;
+}
+.empty-card p {
+  color: var(--text-muted);
+  margin: 0.75rem 0 1.5rem 0;
+}
+.mt-3 { margin-top: 1rem; }
+.mt-4 { margin-top: 1.5rem; }
+.text-center { text-align: center; }
+

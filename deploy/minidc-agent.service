@@ -1,0 +1,18 @@
+[Unit]
+Description=MiniDC Node Agent Daemon
+After=network.target libvirtd.service
+Wants=libvirtd.service
+
+[Service]
+Type=simple
+User=minidc
+Group=minidc
+WorkingDirectory=/var/lib/minidc
+ExecStart=/usr/bin/java -jar /usr/share/minidc/minidc-agent.jar --spring.config.location=/etc/minidc/agent.yml
+Restart=always
+RestartSec=5s
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+

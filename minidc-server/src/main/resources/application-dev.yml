@@ -1,0 +1,14 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/minidc
+    username: minidc
+    password: change-me
+  jpa:
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: true
+minidc:
+  seed-admin: true

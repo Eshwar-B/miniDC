@@ -1,0 +1,33 @@
+spring:
+  main:
+    web-application-type: none
+
+minidc:
+  # Outbound WebSocket connection to the MiniDC control server
+  server-url: wss://control.example.local:8443/ws/agent
+
+  # Unique node identifier assigned upon registration
+  node-id: 00000000-0000-0000-0000-000000000000
+
+  # Secret authentication token matching the server node token hash
+  agent-token: change-me
+
+  # Hypervisor backend: auto | libvirt | virtualbox
+  hypervisor: auto
+
+  # Host IP address reachable by Guacamole (LAN or Tailscale IP)
+  bind-address: 192.168.1.50
+
+  # Local directories
+  images-dir: /var/lib/minidc/images
+  leases-dir: /var/lib/minidc/leases
+
+  # Host memory headroom reservation percentage
+  reserve-ram-percent: 25
+
+  # Inbound RDP forwarded port allocation range
+  port-range: 33000-33999
+
+  # Enable dry-run to test agent command generation without executing real virsh / VBoxManage
+  dry-run: false
+

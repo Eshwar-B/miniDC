@@ -1,0 +1,24 @@
+server:
+  port: 8443
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/minidc
+    username: minidc
+    password: change-me
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+minidc:
+  jwt-secret: ${MINIDC_JWT_SECRET:change-me-change-me-change-me-32}
+  jwt-hours: 12
+  data-key: ${MINIDC_DATA_KEY:Y2hhbmdlLW1lLWNoYW5nZS1tZS1jaGFuZ2UtbWUtMzI=}
+  guac-base-url: http://localhost:8080/guacamole
+  guac-json-secret: ${MINIDC_GUAC_SECRET:00112233445566778899aabbccddeeff}
+  max-active-leases-per-user: 1

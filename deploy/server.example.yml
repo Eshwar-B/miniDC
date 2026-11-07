@@ -1,0 +1,37 @@
+server:
+  port: 8443
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/minidc
+    username: minidc
+    password: change-me
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+minidc:
+  # HS256 secret key (at least 32 characters)
+  jwt-secret: change-me-change-me-change-me-32
+  jwt-hours: 12
+
+  # 32-byte Base64 key for AES-GCM password encryption
+  data-key: Y2hhbmdlLW1lLWNoYW5nZS1tZS1jaGFuZ2UtbWUtMzI=
+
+  # Apache Guacamole web client URL
+  guac-base-url: http://localhost:8081/guacamole
+
+  # 32 hex chars secret key shared with guacamole-auth-json
+  guac-json-secret: 00112233445566778899aabbccddeeff
+
+  # Concurrency limit per user
+  max-active-leases-per-user: 1
+

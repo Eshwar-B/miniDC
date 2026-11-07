@@ -1,0 +1,15 @@
+spring:
+  main:
+    web-application-type: none
+minidc:
+  server-url: ws://localhost:8080/ws/agent
+  node-id: 00000000-0000-0000-0000-000000000000
+  agent-token: change-me
+  hypervisor: auto
+  bind-address: 127.0.0.1
+  images-dir: ./data/images
+  leases-dir: ./data/leases
+  reserve-ram-percent: 25
+  port-range: 33000-33999
+  dry-run: true
+
