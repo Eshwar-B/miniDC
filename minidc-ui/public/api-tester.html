@@ -107,7 +107,7 @@ Host: localhost:8088</pre></div>
       <div class="card-body">
         <p class="desc">Authenticates as platform administrator and retrieves signed JWT bearer token.</p>
         <div class="io-grid">
-          <div><div class="box-title">Request Payload</div><pre id="admin-req">{\n  "email": "admin@minidc.local",\n  "password": "admin"\n}</pre></div>
+          <div><div class="box-title">Request Payload</div><pre id="admin-req">{\n  "email": "admin@minidc.local",\n  "password": "admin12345"\n}</pre></div>
           <div><div class="box-title">Live Response <span id="admin-status"></span></div><pre id="admin-resp">// Click Execute</pre></div>
         </div>
       </div>
@@ -310,7 +310,7 @@ Host: localhost:8088</pre></div>
       const resp = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'admin@minidc.local', password: 'admin' })
+        body: JSON.stringify({ email: 'admin@minidc.local', password: 'admin12345' })
       });
       const data = await resp.json();
       setBadge('admin-status', resp.status, resp.statusText);
