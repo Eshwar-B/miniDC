@@ -6,6 +6,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)]()
 [![React](https://img.shields.io/badge/React-18%20%7C%20Vite%20%7C%20TS-61dafb.svg)]()
 [![Hypervisors](https://img.shields.io/badge/Hypervisors-KVM%20%7C%20VirtualBox%20%7C%20Docker-blueviolet.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-40%20passing-brightgreen.svg)]()
 
 MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve).
@@ -14,14 +15,18 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - The borrower accesses the full interactive desktop directly in a web browser using **Apache Guacamole** (streaming RDP to xrdp inside the sandbox).
 - At lease expiration (or when manually ended/killed), the sandbox and all associated storage are destroyed.
 
+> 📖 **For complete setup, feature details, and user guides → see [USAGE.md](./USAGE.md)**
+
 ---
 
 ## 1. Current Project Status
 
-- **Version:** `1.2` (Multi-Hypervisor + Docker Demo Mode + PostgreSQL 16 Embedded/Docker deployment).
+- **Version:** `1.3` — Phases 1–3 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting).
 - **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
-- **Test Suite Status:** **22/22 unit and driver contract tests passing** (`mvn test` runs in ~12s with 0 errors, 0 failures).
+- **Test Suite Status:** **40/40 unit tests passing** (`mvn test` runs in ~10s with 0 errors, 0 failures).
 - **Frontend Status:** Clean compilation (`npm run build` bundles 45 modules cleanly into static assets).
+- **Live API Tests:** 10/10 end-to-end integration scenarios verified against running server.
+- **Admin Credentials (dev):** `admin@minidc.local` / `admin12345`
 - **Driver Support:**
   - `LibvirtDriver`: Fast native KVM/QEMU virtualization on Linux.
   - `VirtualBoxDriver`: Headless VirtualBox 7.x management with NAT port forwarding on Windows 10/11.
@@ -30,6 +35,9 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
   - Docker Compose service (`postgres:16`).
   - Embedded PostgreSQL (`io.zonky.test:embedded-postgres`) for zero-dependency local development via `--spring.profiles.active=dev,embedded`.
   - Testcontainers for integration testing.
+- **Redis:** Sliding-window rate limiting, JWT token blacklisting, distributed locks, and node presence tracking with TTL.
+
+> 📖 **Full documentation: [USAGE.md](./USAGE.md)** | Phase tracker: [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 
 ---
 

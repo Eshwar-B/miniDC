@@ -1,6 +1,8 @@
 # MiniDC: Project Context, Architecture & Live Phase Status
 
 > **Document Purpose:** Central status tracker for the MiniDC platform. Maintains end-to-end project context, architectural decisions ("why this feature"), implementation status, verification metrics, and immediate next milestones.
+> 
+> 📖 **For the full user manual, feature guide, and setup instructions for all roles → see [USAGE.md](./USAGE.md)**
 
 ---
 
