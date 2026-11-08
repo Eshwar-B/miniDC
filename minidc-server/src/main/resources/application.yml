@@ -20,6 +20,9 @@ spring:
       port: ${REDIS_PORT:6379}
       timeout: 1000ms
 management:
+  health:
+    redis:
+      enabled: false
   endpoints:
     web:
       exposure:

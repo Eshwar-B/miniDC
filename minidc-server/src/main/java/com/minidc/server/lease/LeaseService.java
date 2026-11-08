@@ -64,6 +64,7 @@ public class LeaseService {
     private final com.minidc.server.redis.DistributedLockService distributedLockService;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    @org.springframework.beans.factory.annotation.Autowired
     public LeaseService(LeaseRepository leaseRepository,
                         OfferRepository offerRepository,
                         NodeRepository nodeRepository,

@@ -15,11 +15,20 @@ public class EmbeddedPgConfig {
 
     @Bean(destroyMethod = "close")
     EmbeddedPostgres embeddedPostgres() throws IOException {
+        int port = findAvailablePort();
         return EmbeddedPostgres.builder()
                 .setDataDirectory(Path.of("./data/pg"))
                 .setCleanDataDirectory(false)      // keep data between runs
-                .setPort(5432)
+                .setPort(port)
                 .start();
+    }
+
+    private int findAvailablePort() {
+        try (java.net.ServerSocket ss = new java.net.ServerSocket(5432)) {
+            return 5432;
+        } catch (Exception e) {
+            return 5433;
+        }
     }
 
     @Bean

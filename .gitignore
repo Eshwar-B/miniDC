@@ -46,3 +46,4 @@ application-local.properties
 # OS generated
 Thumbs.db
 .DS_Store
+data/
