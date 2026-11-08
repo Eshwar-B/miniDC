@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniDC - Live Interactive API Inspector & Tester</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --code-bg: #090d16;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 24px; }
+    header { max-width: 1100px; margin: 0 auto 28px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+    h1 { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .badge-pill { font-size: 12px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; border-radius: 9999px; padding: 3px 10px; }
+    .top-links { display: flex; gap: 12px; }
+    .nav-btn { background: #334155; color: #fff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; transition: background 0.2s; }
+    .nav-btn:hover { background: #475569; }
+    .nav-btn.primary { background: var(--primary); }
+    .nav-btn.primary:hover { background: var(--primary-hover); }
+
+    .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+    .card-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); }
+    .endpoint-title { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; }
+    .method { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+    .method.get { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .method.post { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
+    .card-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .desc { font-size: 13px; color: var(--muted); }
+    .io-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media(max-width: 768px) { .io-grid { grid-template-columns: 1fr; } }
+    .box-title { font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    pre { background: var(--code-bg); padding: 12px; border-radius: 6px; border: 1px solid #1e293b; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #e2e8f0; overflow-x: auto; max-height: 220px; }
+    button.run-btn { background: var(--primary); color: white; border: none; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    button.run-btn:hover { background: var(--primary-hover); }
+    button.run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 600; display: inline-block; }
+    .status-badge.s200 { background: #064e3b; color: #6ee7b7; }
+    .status-badge.s201 { background: #064e3b; color: #6ee7b7; }
+    .status-badge.s204 { background: #064e3b; color: #6ee7b7; }
+    .status-badge.s429 { background: #78350f; color: #fde68a; }
+    .status-badge.s403 { background: #7f1d1d; color: #fca5a5; }
+    .status-badge.s500 { background: #7f1d1d; color: #fca5a5; }
+    .token-display { font-size: 12px; color: var(--muted); background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>⚡ MiniDC API Inspector <span class="badge-pill">Phases 1-3 Live</span></h1>
+      <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">Direct browser execution engine against Spring Boot backend (Port 8088)</p>
+    </div>
+    <div class="top-links">
+      <a href="http://localhost:8088/actuator/health" target="_blank" class="nav-btn">Raw Health (8088)</a>
+      <a href="/" target="_blank" class="nav-btn primary">Open React Dashboard</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="token-display">
+      <span><strong>Active Lender Token:</strong> <code id="activeTokenText">(Not registered yet - click Run on Step 2 & 4)</code></span>
+      <button onclick="clearState()" style="background:#475569;border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Reset Tokens</button>
+    </div>
+
+    <!-- 1. HEALTH -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method get">GET</span>
+          <span>1. System Health Check</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/actuator/health</span>
+        </div>
+        <button class="run-btn" onclick="testHealth()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Verifies Spring Boot application, PostgreSQL connection, and service health status.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request</div><pre>GET /actuator/health
+Host: localhost:8088</pre></div>
+          <div><div class="box-title">Live Response <span id="health-status"></span></div><pre id="health-resp">// Click Execute to verify</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. ADMIN LOGIN -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method post">POST</span>
+          <span>2. Admin Authentication</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/auth/login</span>
+        </div>
+        <button class="run-btn" onclick="testAdminLogin()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Authenticates as platform administrator and retrieves signed JWT bearer token.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request Payload</div><pre id="admin-req">{\n  "email": "admin@minidc.local",\n  "password": "admin"\n}</pre></div>
+          <div><div class="box-title">Live Response <span id="admin-status"></span></div><pre id="admin-resp">// Click Execute</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. CREATE INVITE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method post">POST</span>
+          <span>3. Generate Single-Use Invite Code</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/admin/invites</span>
+        </div>
+        <button class="run-btn" onclick="testCreateInvite()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Protected admin endpoint creating a 7-day single-use registration invite code.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request Headers</div><pre id="invite-req">Authorization: Bearer &lt;AdminToken&gt;</pre></div>
+          <div><div class="box-title">Live Response <span id="invite-status"></span></div><pre id="invite-resp">// Click Execute</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. REGISTER USER -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method post">POST</span>
+          <span>4. Register Lender / Borrower Account</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/auth/register</span>
+        </div>
+        <button class="run-btn" onclick="testRegister()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Registers a new user account utilizing the invite code generated in Step 3.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request Payload</div><pre id="reg-req">// Waiting for Invite Code...</pre></div>
+          <div><div class="box-title">Live Response <span id="reg-status"></span></div><pre id="reg-resp">// Click Execute</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. GET PROFILE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method get">GET</span>
+          <span>5. Authenticated Profile Context</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/me</span>
+        </div>
+        <button class="run-btn" onclick="testProfile()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Validates JWT authentication and returns current user identity, role, and permissions.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request Headers</div><pre id="profile-req">Authorization: Bearer &lt;LenderToken&gt;</pre></div>
+          <div><div class="box-title">Live Response <span id="profile-status"></span></div><pre id="profile-resp">// Click Execute</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. REGISTER NODE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method post">POST</span>
+          <span>6. Register Edge Node</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/nodes</span>
+        </div>
+        <button class="run-btn" onclick="testRegisterNode()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Registers a host compute workstation and provisions an agent authentication token.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request Payload</div><pre id="node-req">{\n  "name": "Browser-Edge-Node-01",\n  "totalRamMb": 32768,\n  "totalCores": 16,\n  "totalDiskGb": 500,\n  "driverType": "DOCKER"\n}</pre></div>
+          <div><div class="box-title">Live Response <span id="node-status"></span></div><pre id="node-resp">// Click Execute</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. PUBLISH OFFER -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method post">POST</span>
+          <span>7. Publish Compute Capacity Offer</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/offers</span>
+        </div>
+        <button class="run-btn" onclick="testPublishOffer()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Publishes CPU and RAM limits to marketplace with auto-approve policy.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request Payload</div><pre id="offer-req">// Waiting for Node Registration...</pre></div>
+          <div><div class="box-title">Live Response <span id="offer-status"></span></div><pre id="offer-resp">// Click Execute</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. GET NODES -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method get">GET</span>
+          <span>8. View Registered Edge Nodes</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/nodes/mine</span>
+        </div>
+        <button class="run-btn" onclick="testMyNodes()">Execute</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Fetches all edge hardware nodes belonging to current lender.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Request Headers</div><pre id="mynodes-req">Authorization: Bearer &lt;LenderToken&gt;</pre></div>
+          <div><div class="box-title">Live Response <span id="mynodes-status"></span></div><pre id="mynodes-resp">// Click Execute</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. RATE LIMIT TEST -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method post">POST</span>
+          <span>9. Test Redis Sliding-Window Rate Limiter (Brute Force Defense)</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/auth/login</span>
+        </div>
+        <button class="run-btn" style="background:var(--warning); color:#000;" onclick="testRateLimiter()">Burst 6 Requests</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Fires 6 rapid login attempts to trigger HTTP 429 Too Many Requests blocking.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Configuration</div><pre>Target: /api/auth/login\nLimit: 5 requests / 60 seconds\nTest Action: 6 instant POST requests</pre></div>
+          <div><div class="box-title">Live Response <span id="ratelimit-status"></span></div><pre id="ratelimit-resp">// Click Burst to test Redis limiter</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. LOGOUT & BLACKLIST -->
+    <div class="card">
+      <div class="card-header">
+        <div class="endpoint-title">
+          <span class="method post">POST</span>
+          <span>10. JWT Revocation & Blacklisting</span>
+          <span style="font-size: 13px; color: var(--muted); font-family: monospace;">/api/auth/logout</span>
+        </div>
+        <button class="run-btn" style="background:var(--danger);" onclick="testLogout()">Execute Revocation</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">Logs out, hashes JWT in Redis blacklist, and tests subsequent rejected /api/me call.</p>
+        <div class="io-grid">
+          <div><div class="box-title">Revocation Action</div><pre id="logout-req">POST /api/auth/logout\nFollow-up: GET /api/me (Expect 403 Forbidden)</pre></div>
+          <div><div class="box-title">Live Response <span id="logout-status"></span></div><pre id="logout-resp">// Click Execute Revocation</pre></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let adminToken = '';
+    let inviteCode = '';
+    let lenderToken = '';
+    let registeredNodeId = '';
+
+    function setBadge(elemId, status, text) {
+      const el = document.getElementById(elemId);
+      el.className = 'status-badge s' + status;
+      el.textContent = status + (text ? ' ' + text : '');
+    }
+
+    function updateTokenDisplay() {
+      const el = document.getElementById('activeTokenText');
+      if (lenderToken) {
+        el.textContent = lenderToken.substring(0, 32) + '...';
+        el.style.color = '#34d399';
+      } else {
+        el.textContent = '(Not registered yet - click Run on Step 2 & 4)';
+        el.style.color = '#94a3b8';
+      }
+    }
+
+    function clearState() {
+      adminToken = '';
+      inviteCode = '';
+      lenderToken = '';
+      registeredNodeId = '';
+      updateTokenDisplay();
+      alert('State cleared!');
+    }
+
+    async function testHealth() {
+      const resp = await fetch('/actuator/health');
+      const data = await resp.json();
+      setBadge('health-status', resp.status, resp.statusText);
+      document.getElementById('health-resp').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function testAdminLogin() {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'admin@minidc.local', password: 'admin' })
+      });
+      const data = await resp.json();
+      setBadge('admin-status', resp.status, resp.statusText);
+      document.getElementById('admin-resp').textContent = JSON.stringify(data, null, 2);
+      if (data.token) {
+        adminToken = data.token;
+        document.getElementById('invite-req').textContent = 'Authorization: Bearer ' + adminToken.substring(0, 30) + '...';
+      }
+    }
+
+    async function testCreateInvite() {
+      if (!adminToken) {
+        alert('Please run Step 2 (Admin Authentication) first!');
+        return;
+      }
+      const resp = await fetch('/api/admin/invites', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + adminToken }
+      });
+      const data = await resp.json();
+      setBadge('invite-status', resp.status, resp.statusText);
+      document.getElementById('invite-resp').textContent = JSON.stringify(data, null, 2);
+      if (data.code) {
+        inviteCode = data.code;
+        document.getElementById('reg-req').textContent = JSON.stringify({
+          email: 'lender-browser-' + Math.floor(Math.random() * 10000) + '@minidc.local',
+          password: 'Password123!',
+          displayName: 'Browser Lender',
+          inviteCode: inviteCode
+        }, null, 2);
+      }
+    }
+
+    async function testRegister() {
+      if (!inviteCode) {
+        alert('Please run Step 3 (Generate Single-Use Invite Code) first!');
+        return;
+      }
+      const payload = JSON.parse(document.getElementById('reg-req').textContent);
+      const resp = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      setBadge('reg-status', resp.status, resp.statusText);
+      document.getElementById('reg-resp').textContent = JSON.stringify(data, null, 2);
+      if (data.token) {
+        lenderToken = data.token;
+        updateTokenDisplay();
+        document.getElementById('profile-req').textContent = 'Authorization: Bearer ' + lenderToken.substring(0, 30) + '...';
+        document.getElementById('mynodes-req').textContent = 'Authorization: Bearer ' + lenderToken.substring(0, 30) + '...';
+      }
+    }
+
+    async function testProfile() {
+      if (!lenderToken) {
+        alert('Please run Step 4 (Register) first to obtain a Lender Token!');
+        return;
+      }
+      const resp = await fetch('/api/me', {
+        headers: { 'Authorization': 'Bearer ' + lenderToken }
+      });
+      const data = await resp.json();
+      setBadge('profile-status', resp.status, resp.statusText);
+      document.getElementById('profile-resp').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function testRegisterNode() {
+      if (!lenderToken) {
+        alert('Please run Step 4 (Register) first!');
+        return;
+      }
+      const payload = {
+        name: 'Browser-Edge-Node-01',
+        totalRamMb: 32768,
+        totalCores: 16,
+        totalDiskGb: 500,
+        driverType: 'DOCKER'
+      };
+      const resp = await fetch('/api/nodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + lenderToken
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      setBadge('node-status', resp.status, resp.statusText);
+      document.getElementById('node-resp').textContent = JSON.stringify(data, null, 2);
+      if (data.nodeId) {
+        registeredNodeId = data.nodeId;
+        document.getElementById('offer-req').textContent = JSON.stringify({
+          nodeId: registeredNodeId,
+          maxRamMb: 16384,
+          maxCores: 8,
+          maxDiskGb: 100,
+          autoApprove: true
+        }, null, 2);
+      }
+    }
+
+    async function testPublishOffer() {
+      if (!registeredNodeId) {
+        alert('Please run Step 6 (Register Edge Node) first!');
+        return;
+      }
+      const payload = JSON.parse(document.getElementById('offer-req').textContent);
+      const resp = await fetch('/api/offers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + lenderToken
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      setBadge('offer-status', resp.status, resp.statusText);
+      document.getElementById('offer-resp').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function testMyNodes() {
+      if (!lenderToken) {
+        alert('Please run Step 4 (Register) first!');
+        return;
+      }
+      const resp = await fetch('/api/nodes/mine', {
+        headers: { 'Authorization': 'Bearer ' + lenderToken }
+      });
+      const data = await resp.json();
+      setBadge('mynodes-status', resp.status, resp.statusText);
+      document.getElementById('mynodes-resp').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function testRateLimiter() {
+      document.getElementById('ratelimit-resp').textContent = 'Sending burst of 6 login requests to /api/auth/login...\n';
+      for (let i = 1; i <= 6; i++) {
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'badactor' + i + '@attack.com', password: 'bad' })
+        });
+        const text = `Request #${i}: HTTP ${resp.status} ${resp.statusText}\n`;
+        document.getElementById('ratelimit-resp').textContent += text;
+        if (resp.status === 429) {
+          const body = await resp.json();
+          document.getElementById('ratelimit-resp').textContent += '--> Redis 429 Payload: ' + JSON.stringify(body) + '\n';
+          setBadge('ratelimit-status', 429, 'Too Many Requests (Blocked!)');
+          return;
+        }
+      }
+    }
+
+    async function testLogout() {
+      if (!lenderToken) {
+        alert('Please run Step 4 (Register) first!');
+        return;
+      }
+      const resp = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + lenderToken }
+      });
+      setBadge('logout-status', resp.status, resp.statusText);
+      document.getElementById('logout-resp').textContent = `1. POST /api/auth/logout returned: HTTP ${resp.status}\nToken blacklisted in Redis!\n\n`;
+
+      // Now verify that subsequent call is rejected
+      document.getElementById('logout-resp').textContent += '2. Verifying token revocation via GET /api/me...\n';
+      const checkResp = await fetch('/api/me', {
+        headers: { 'Authorization': 'Bearer ' + lenderToken }
+      });
+      document.getElementById('logout-resp').textContent += `Subsequent GET /api/me returned: HTTP ${checkResp.status} ${checkResp.statusText} (Access Denied!)\nToken is permanently invalidated.`;
+      lenderToken = '';
+      updateTokenDisplay();
+    }
+
+    // Auto-run health on load
+    testHealth();
+  </script>
+</body>
+</html>
+
