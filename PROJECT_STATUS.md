@@ -31,7 +31,6 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | **COMPLETED** ✅ | 30 / 30 Passed | Committed & pushed as `phase 2 completed` |
 | **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **COMPLETED** ✅ | 40 / 40 Passed | Committed & pushed as `phase 3 completed` |
 | **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 5** | **Real-Time Frontend & Interactive Observability** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **PLANNED** ⏳ | Pending | Pending |
@@ -127,8 +126,21 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 6. Verification & Test Metrics Log
+## 7. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
-* **Phase 1 Frontend:** 45 modules cleanly compiled into production bundle (`dist/`).
+* **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
+* **Phase 3 Tests:** 40 passing tests (including Redis state presence, rate limiting filter, token blacklisting, and distributed locks).
+* **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
+  1. Actuator Health (`/actuator/health`) -> `UP`
+  2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`
+  3. Single-Use Invite Code (`/api/admin/invites`) -> `200 OK + INV-code`
+  4. User Registration (`/api/auth/register`) -> `200 OK + JWT`
+  5. Authenticated Profile Context (`/api/me`) -> `200 OK`
+  6. Edge Node Registration (`/api/nodes`) -> `201 Created + Daemon Token`
+  7. Marketplace Offer Publishing (`/api/offers`) -> `201 Created`
+  8. Marketplace Browsing & Node Status (`/api/offers/available`, `/api/nodes/mine`) -> `200 OK`
+  9. Redis Rate Limiter Brute-Force Defense -> `429 Too Many Requests (Blocked by Redis Filter)`
+  10. JWT Token Blacklist & Session Revocation (`/api/auth/logout`) -> `204 No Content`, subsequent calls rejected with `403 Forbidden`
+* **Frontend:** 45 modules cleanly compiled into production bundle (`dist/`).
 * **Current Git Branch:** `main` (Remote: `https://github.com/Eshwar-B/miniDC.git`)
