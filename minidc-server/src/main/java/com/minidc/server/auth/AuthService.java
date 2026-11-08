@@ -31,6 +31,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditService auditService;
+    private final com.minidc.server.redis.TokenBlacklistService tokenBlacklistService;
+    private final com.minidc.server.config.AppProperties properties;
 
     private record FailedAttempt(int count, Instant lockedUntil) {}
     private final Map<String, FailedAttempt> failureCache = new ConcurrentHashMap<>();
@@ -39,12 +41,23 @@ public class AuthService {
                        InviteRepository inviteRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       AuditService auditService) {
+                       AuditService auditService,
+                       com.minidc.server.redis.TokenBlacklistService tokenBlacklistService,
+                       com.minidc.server.config.AppProperties properties) {
         this.userRepository = userRepository;
         this.inviteRepository = inviteRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.auditService = auditService;
+        this.tokenBlacklistService = tokenBlacklistService;
+        this.properties = properties;
+    }
+
+    public void logout(String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7).trim();
+            tokenBlacklistService.blacklistToken(token, java.time.Duration.ofHours(properties.jwtHours()));
+        }
     }
 
     @Transactional

@@ -74,3 +74,4 @@ class GuacCryptoTest {
         assertThrows(IllegalArgumentException.class, () -> guacCrypto.parseKey("   "));
     }
 }
+

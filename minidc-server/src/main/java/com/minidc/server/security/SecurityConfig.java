@@ -26,9 +26,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final com.minidc.server.redis.RateLimiterFilter rateLimiterFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, com.minidc.server.redis.RateLimiterFilter rateLimiterFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.rateLimiterFilter = rateLimiterFilter;
     }
 
     @Bean
@@ -38,7 +40,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // TODO(phase-6): Add mTLS client certificate validation and IP rate limiting filters
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -47,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/actuator/health", "/ws/agent", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(rateLimiterFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

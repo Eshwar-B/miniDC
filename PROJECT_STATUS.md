@@ -29,7 +29,8 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 |---|---|---|---|---|
 | **Phase 1** | **Foundation & Multi-Hypervisor Baseline** | **COMPLETED** ✅ | 22 / 22 Passed | Committed & pushed as `phase 1 completed` |
 | **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | **COMPLETED** ✅ | 30 / 30 Passed | Committed & pushed as `phase 2 completed` |
-| **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **NEXT UP** ⏳ | Pending | Pending |
+| **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **COMPLETED** ✅ | 40 / 40 Passed | Committed & pushed as `phase 3 completed` |
+| **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 5** | **Real-Time Frontend & Interactive Observability** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **PLANNED** ⏳ | Pending | Pending |
@@ -83,7 +84,29 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 5. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+## 5. Completed: Phase 3 (Distributed Caching, Session & Rate Limiting with Redis)
+
+### 5.1 Objectives & Features Completed
+* **Redis State Management & Fallback Layer (`RedisStateService`):**
+  * Spring Data Redis integration (`StringRedisTemplate`) with transparent thread-safe in-memory fallback for local dev & testing.
+  * Node presence tracking with TTL (`minidc:node:presence:<nodeId>`) for instantaneous $O(1)$ online/offline detection without database polling.
+  * Atomic sliding-window counters for rate limiting and `setIfAbsent` atomic primitives for locks.
+* **Distributed Locking Engine (`DistributedLockService`):**
+  * Distributed mutex locks on offer capacity allocation (`minidc:lock:offer:<offerId>`) to prevent concurrent double-booking across clustered control servers.
+  * Integrated seamlessly into `LeaseService.createLease` with safe fallback for backward compatibility.
+* **Token Blacklist & Session Revocation (`TokenBlacklistService`):**
+  * High-speed $O(1)$ SHA-256 hashed lookup for revoked JWT tokens on user logout or account suspension.
+  * Integrated into `JwtAuthFilter` to reject blacklisted tokens before request processing.
+  * Added `/api/auth/logout` endpoint in `AuthController` and hooked into frontend `AuthContext`.
+* **Distributed Rate Limiting Filter (`RateLimiterFilter`):**
+  * Sliding-window token-bucket rate limiting defending critical endpoints (`/api/auth/login`, `/api/auth/register`, `/api/leases`) against brute force and DDoS attacks.
+  * Emits standard HTTP 429 Too Many Requests response with `Retry-After: 60` and `X-RateLimit-*` headers.
+* **Container Infrastructure:**
+  * Added Redis 7 Alpine service with persistence and healthcheck to `deploy/docker-compose.yml`.
+* **Test Verification:**
+  * Added 10 new automated tests (`RedisStateServiceTest`, `DistributedLockServiceTest`, `TokenBlacklistServiceTest`, `RateLimiterFilterTest`), bringing the automated test suite to 40 passing tests.
+
+## 6. Upcoming Phases: High-Level Roadmap & "Why" Rationale
 
 * **Phase 3 (Redis Caching & Rate Limiting):**
   * *Why:* Eliminate database bottleneck for ephemeral node heartbeats (using Redis key TTL expiration for instant offline detection), add distributed locking via Redisson, and protect APIs against brute force via token-bucket rate limiting.

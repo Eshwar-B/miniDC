@@ -13,14 +13,41 @@ public record AppProperties(
         String guacBaseUrl,
         String guacJsonSecret,
         int maxActiveLeasesPerUser,
-        boolean seedAdmin
+        boolean seedAdmin,
+        RedisProperties redis,
+        RateLimitProperties rateLimit
 ) {
+    public record RedisProperties(boolean enabled) {
+        public RedisProperties {
+            // default enabled
+        }
+    }
+
+    public record RateLimitProperties(
+            boolean enabled,
+            int loginLimitPerMinute,
+            int registerLimitPerMinute,
+            int leaseLimitPerMinute
+    ) {
+        public RateLimitProperties {
+            if (loginLimitPerMinute <= 0) loginLimitPerMinute = 5;
+            if (registerLimitPerMinute <= 0) registerLimitPerMinute = 3;
+            if (leaseLimitPerMinute <= 0) leaseLimitPerMinute = 10;
+        }
+    }
+
     public AppProperties {
         if (jwtHours <= 0) {
             jwtHours = 12;
         }
         if (maxActiveLeasesPerUser <= 0) {
             maxActiveLeasesPerUser = 1;
+        }
+        if (redis == null) {
+            redis = new RedisProperties(true);
+        }
+        if (rateLimit == null) {
+            rateLimit = new RateLimitProperties(true, 5, 3, 10);
         }
     }
 }

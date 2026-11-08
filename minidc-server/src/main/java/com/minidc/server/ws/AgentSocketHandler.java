@@ -41,19 +41,22 @@ public class AgentSocketHandler extends TextWebSocketHandler {
     private final LeaseService leaseService;
     private final AuditService auditService;
     private final ObjectMapper objectMapper;
+    private final com.minidc.server.redis.RedisStateService redisStateService;
 
     public AgentSocketHandler(AgentSessionRegistry sessionRegistry,
                               NodeRepository nodeRepository,
                               LeaseRepository leaseRepository,
                               LeaseService leaseService,
                               AuditService auditService,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              com.minidc.server.redis.RedisStateService redisStateService) {
         this.sessionRegistry = sessionRegistry;
         this.nodeRepository = nodeRepository;
         this.leaseRepository = leaseRepository;
         this.leaseService = leaseService;
         this.auditService = auditService;
         this.objectMapper = objectMapper;
+        this.redisStateService = redisStateService;
     }
 
     @Override
@@ -61,6 +64,7 @@ public class AgentSocketHandler extends TextWebSocketHandler {
         UUID nodeId = (UUID) session.getAttributes().get("nodeId");
         if (nodeId != null) {
             sessionRegistry.register(nodeId, session);
+            redisStateService.recordNodeHeartbeat(nodeId, java.time.Duration.ofSeconds(60));
             log.info("Agent connected for node: {}", nodeId);
         }
     }
@@ -70,6 +74,7 @@ public class AgentSocketHandler extends TextWebSocketHandler {
         UUID nodeId = (UUID) session.getAttributes().get("nodeId");
         if (nodeId != null) {
             sessionRegistry.unregister(nodeId);
+            redisStateService.delete("minidc:node:presence:" + nodeId);
             log.info("Agent disconnected for node: {}", nodeId);
         }
     }
@@ -97,6 +102,7 @@ public class AgentSocketHandler extends TextWebSocketHandler {
             }
             case HEARTBEAT -> {
                 HeartbeatPayload payload = objectMapper.treeToValue(msg.payload(), HeartbeatPayload.class);
+                redisStateService.recordNodeHeartbeat(nodeId, java.time.Duration.ofSeconds(60));
                 Node node = nodeRepository.findById(nodeId).orElse(null);
                 if (node != null) {
                     node.setStatus(NodeStatus.ONLINE);

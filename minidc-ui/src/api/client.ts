@@ -66,6 +66,9 @@ export const api = {
   login: (data: LoginRequest) =>
     request<TokenResponse>('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
 
+  logout: () =>
+    request<void>('/api/auth/logout', { method: 'POST' }),
+
   getMe: () => request<User>('/api/me'),
 
   // Nodes

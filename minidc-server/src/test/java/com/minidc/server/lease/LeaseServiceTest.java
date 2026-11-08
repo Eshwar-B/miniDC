@@ -49,7 +49,9 @@ class LeaseServiceTest {
             "http://localhost:8080/guacamole",
             "secret",
             1,
-            true
+            true,
+            null,
+            null
     );
 
     private final UUID borrowerId = UUID.randomUUID();

@@ -14,6 +14,11 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 1000ms
 management:
   endpoints:
     web:
@@ -26,3 +31,10 @@ minidc:
   guac-base-url: http://localhost:8080/guacamole
   guac-json-secret: ${MINIDC_GUAC_SECRET:00112233445566778899aabbccddeeff}
   max-active-leases-per-user: 1
+  redis:
+    enabled: ${MINIDC_REDIS_ENABLED:true}
+  rate-limit:
+    enabled: ${MINIDC_RATE_LIMIT_ENABLED:true}
+    login-limit-per-minute: 5
+    register-limit-per-minute: 3
+    lease-limit-per-minute: 10

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -60,6 +61,7 @@ public class LeaseService {
     private final AesGcmCrypto aesGcmCrypto;
     private final AgentCommandSender agentCommandSender;
     private final AppProperties properties;
+    private final com.minidc.server.redis.DistributedLockService distributedLockService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public LeaseService(LeaseRepository leaseRepository,
@@ -69,7 +71,8 @@ public class LeaseService {
                         AuditService auditService,
                         AesGcmCrypto aesGcmCrypto,
                         AgentCommandSender agentCommandSender,
-                        AppProperties properties) {
+                        AppProperties properties,
+                        com.minidc.server.redis.DistributedLockService distributedLockService) {
         this.leaseRepository = leaseRepository;
         this.offerRepository = offerRepository;
         this.nodeRepository = nodeRepository;
@@ -78,6 +81,21 @@ public class LeaseService {
         this.aesGcmCrypto = aesGcmCrypto;
         this.agentCommandSender = agentCommandSender;
         this.properties = properties;
+        this.distributedLockService = distributedLockService != null
+                ? distributedLockService
+                : new com.minidc.server.redis.DistributedLockService(new com.minidc.server.redis.RedisStateService(null, properties));
+    }
+
+    public LeaseService(LeaseRepository leaseRepository,
+                        OfferRepository offerRepository,
+                        NodeRepository nodeRepository,
+                        UserRepository userRepository,
+                        AuditService auditService,
+                        AesGcmCrypto aesGcmCrypto,
+                        AgentCommandSender agentCommandSender,
+                        AppProperties properties) {
+        this(leaseRepository, offerRepository, nodeRepository, userRepository, auditService,
+                aesGcmCrypto, agentCommandSender, properties, null);
     }
 
     @Transactional
@@ -128,6 +146,15 @@ public class LeaseService {
 
     @Transactional
     public LeaseResponse createLease(UUID borrowerId, CreateLeaseRequest request) {
+        return distributedLockService.withLock(
+                "offer:" + request.offerId(),
+                Duration.ofSeconds(5),
+                Duration.ofSeconds(10),
+                () -> doCreateLease(borrowerId, request)
+        );
+    }
+
+    private LeaseResponse doCreateLease(UUID borrowerId, CreateLeaseRequest request) {
         User borrower = userRepository.findById(borrowerId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + borrowerId));
         if (borrower.isBanned()) {

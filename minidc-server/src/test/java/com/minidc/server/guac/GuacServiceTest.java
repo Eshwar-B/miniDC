@@ -51,7 +51,9 @@ class GuacServiceTest {
                 "http://localhost:8080/guacamole",
                 secretKey,
                 1,
-                false
+                false,
+                null,
+                null
         );
 
         guacService = new GuacService(

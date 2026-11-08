@@ -46,7 +46,9 @@ class LeaseStateMachineTest {
             "http://localhost:8080/guacamole",
             "secret",
             1,
-            true
+            true,
+            null,
+            null
     );
 
     @BeforeEach

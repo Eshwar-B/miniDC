@@ -42,6 +42,12 @@ public class AuthController {
         return authService.login(request);
     }
 
+    @PostMapping("/api/auth/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@org.springframework.web.bind.annotation.RequestHeader(value = org.springframework.http.HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        authService.logout(authHeader);
+    }
+
     @GetMapping("/api/me")
     public User getCurrentUser(@AuthenticationPrincipal CurrentUser currentUser) {
         // TODO(phase-2): Implement password reset, email verification, and token refresh endpoints
