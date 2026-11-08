@@ -27,9 +27,9 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 | Phase | Milestone Name | Status | Verified Tests | Git Commit & Push Status |
 |---|---|---|---|---|
-| **Phase 1** | **Foundation & Multi-Hypervisor Baseline** | **COMPLETED** ✅ | 22 / 22 Passed | Tagged/Committed as `phase 1 completed` |
-| **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | **IN PROGRESS** 🔄 | Under Construction | Pending |
-| **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 1** | **Foundation & Multi-Hypervisor Baseline** | **COMPLETED** ✅ | 22 / 22 Passed | Committed & pushed as `phase 1 completed` |
+| **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | **COMPLETED** ✅ | 30 / 30 Passed | Committed & pushed as `phase 2 completed` |
+| **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 5** | **Real-Time Frontend & Interactive Observability** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **PLANNED** ⏳ | Pending | Pending |
@@ -65,15 +65,21 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 4. Current Work: Phase 2 (Guacamole Token Cryptography & Streaming Pipeline)
+## 4. Completed: Phase 2 (Guacamole Token Cryptography & Streaming Pipeline)
 
-### 4.1 Objectives & Features
+### 4.1 Objectives & Features Completed
 * **HMAC-SHA256 & AES-128-CBC Cryptography Engine (`GuacCrypto`):** 
-  * *Why:* Apache Guacamole's `auth-json` plugin requires connection configurations to be signed with HMAC-SHA256 and encrypted with AES-128-CBC (zero IV). This ensures VM credentials and connection addresses are never exposed in plaintext to the browser client or third parties.
-* **Direct Token Dispatch (`GuacService`):**
-  * *Why:* Direct REST exchange with Guacamole's `/api/tokens` endpoint obtains an authenticated session token that automatically expires when the lease terminates (`ends_at`).
-* **Embedded Web Client Viewport & Reconnect Handling:**
-  * *Why:* Borrowers need an integrated, responsive desktop experience with countdown timers, clipboard support, and clean reconnection alerts.
+  * Implemented HMAC-SHA256 signature computation and AES-128-CBC zero-IV encryption matching Apache Guacamole `auth-json` specifications.
+  * Robust key parser supporting 32-character hex strings, 64-character hex strings, and arbitrary UTF-8 fallback secrets.
+  * Strict tampering verification throwing `SecurityException` upon signature mismatch or corrupted ciphertext.
+* **Direct Token Dispatch & Fallback (`GuacService`):**
+  * HTTP client exchanges signed data payload with Guacamole's `/api/tokens` endpoint.
+  * Automatic graceful fallback to signed token launch URL when Guacamole container is offline or during offline testing.
+* **Enhanced Frontend Guacamole Integration:**
+  * Updated API response models to carry `token` and `connectionId`.
+  * Desktop session launch notifications with tips on accessing the Guacamole clipboard menu (`Ctrl+Alt+Shift`).
+* **Test Verification:**
+  * 8 new tests added (5 unit tests in `GuacCryptoTest`, 3 unit/integration tests in `GuacServiceTest`), bringing the automated test suite to 30 passing tests.
 
 ---
 

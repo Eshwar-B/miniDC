@@ -12,13 +12,16 @@ interface LeaseCardProps {
 export const LeaseCard: React.FC<LeaseCardProps> = ({ lease, isLender, onActionComplete }) => {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectedNotice, setConnectedNotice] = useState<string | null>(null);
 
   const handleConnect = async () => {
     setConnecting(true);
     setError(null);
+    setConnectedNotice(null);
     try {
       const res = await api.getConnectUrl(lease.id);
       window.open(res.url, '_blank', 'noopener,noreferrer');
+      setConnectedNotice('Desktop streaming in new window. Tip: Press Ctrl+Alt+Shift for the Guacamole clipboard & settings menu.');
     } catch (err: any) {
       setError(err.message || 'Failed to open desktop connection');
     } finally {
@@ -68,6 +71,7 @@ export const LeaseCard: React.FC<LeaseCardProps> = ({ lease, isLender, onActionC
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      {connectedNotice && <div className="alert alert-info" style={{ fontSize: '0.85rem' }}>{connectedNotice}</div>}
 
       <div className="lease-details">
         <p><strong>RAM:</strong> {lease.ramMb} MB</p>

@@ -115,6 +115,8 @@ export interface CreateLeaseRequest {
 
 export interface ConnectResponse {
   url: string;
+  token?: string;
+  connectionId?: string;
 }
 
 export interface InviteResponse {
