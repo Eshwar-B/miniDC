@@ -6,9 +6,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/**
- * Base test container setup managing a shared PostgreSQL container instance for integration tests.
- */
+// Base test container setup managing a shared PostgreSQL container instance for integration tests.
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class PostgresTestContainer {
 

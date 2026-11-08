@@ -81,3 +81,4 @@ class RedisStateServiceTest {
         assertFalse(redisStateService.isNodeOnline(nodeId));
     }
 }
+

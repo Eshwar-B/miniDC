@@ -49,3 +49,4 @@ class TokenBlacklistServiceTest {
         assertDoesNotThrow(() -> blacklistService.blacklistToken("", Duration.ofMinutes(5)));
     }
 }
+
