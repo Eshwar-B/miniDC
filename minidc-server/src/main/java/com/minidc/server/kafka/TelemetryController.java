@@ -60,3 +60,4 @@ public class TelemetryController {
         kafkaEventPublisher.publishTelemetry(metric);
     }
 }
+

@@ -118,3 +118,4 @@ class KafkaEventPublisherTest {
         assertEquals(KafkaTopics.TOPIC_TELEMETRY, map.get("originalTopic"));
     }
 }
+

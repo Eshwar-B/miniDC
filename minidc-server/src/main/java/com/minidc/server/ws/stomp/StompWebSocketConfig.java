@@ -46,3 +46,4 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(authChannelInterceptor);
     }
 }
+

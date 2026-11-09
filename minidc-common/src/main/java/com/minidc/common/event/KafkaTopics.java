@@ -15,3 +15,4 @@ public final class KafkaTopics {
     public static final String TOPIC_RECONCILIATION = "minidc.agent.reconciliation";
     public static final String TOPIC_DLQ = "minidc.dlq";
 }
+

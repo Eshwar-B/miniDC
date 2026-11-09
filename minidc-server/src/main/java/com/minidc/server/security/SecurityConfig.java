@@ -18,7 +18,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Spring Security configuration establishing stateless JWT authentication, CORS, and endpoint authorization rules.
+ * Spring Security configuration establishing stateless JWT authentication,
+ * CORS, and endpoint authorization rules.
  */
 @Configuration
 @EnableWebSecurity
@@ -45,9 +46,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/actuator/health", "/ws/agent", "/ws/stomp/**", "/error").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .requestMatchers("/api/auth/**", "/actuator/health", "/ws/agent", "/ws/stomp/**", "/error")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(rateLimiterFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -80,3 +80,4 @@ class StompNotificationServiceTest {
         verify(messagingTemplate).convertAndSendToUser(eq(userId.toString()), eq("/queue/notifications"), any(Map.class));
     }
 }
+

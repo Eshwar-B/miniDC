@@ -69,3 +69,4 @@ class TelemetryServiceTest {
         assertNull(telemetryService.getLatestMetricForLease(UUID.randomUUID()));
     }
 }
+
