@@ -15,12 +15,42 @@ public record AppProperties(
         int maxActiveLeasesPerUser,
         boolean seedAdmin,
         RedisProperties redis,
-        RateLimitProperties rateLimit
+        RateLimitProperties rateLimit,
+        KafkaProperties kafka
 ) {
+    public record KafkaProperties(
+            boolean enabled,
+            String bootstrapServers,
+            String dlqTopic
+    ) {
+        public KafkaProperties {
+            if (bootstrapServers == null || bootstrapServers.isBlank()) {
+                bootstrapServers = "localhost:9092";
+            }
+            if (dlqTopic == null || dlqTopic.isBlank()) {
+                dlqTopic = "minidc.dlq";
+            }
+        }
+    }
+
     public record RedisProperties(boolean enabled) {
         public RedisProperties {
             // default enabled
         }
+    }
+
+    public AppProperties(
+            String jwtSecret,
+            int jwtHours,
+            String dataKey,
+            String guacBaseUrl,
+            String guacJsonSecret,
+            int maxActiveLeasesPerUser,
+            boolean seedAdmin,
+            RedisProperties redis,
+            RateLimitProperties rateLimit
+    ) {
+        this(jwtSecret, jwtHours, dataKey, guacBaseUrl, guacJsonSecret, maxActiveLeasesPerUser, seedAdmin, redis, rateLimit, null);
     }
 
     public record RateLimitProperties(
@@ -48,6 +78,9 @@ public record AppProperties(
         }
         if (rateLimit == null) {
             rateLimit = new RateLimitProperties(true, 5, 3, 10);
+        }
+        if (kafka == null) {
+            kafka = new KafkaProperties(false, "localhost:9092", "minidc.dlq");
         }
     }
 }

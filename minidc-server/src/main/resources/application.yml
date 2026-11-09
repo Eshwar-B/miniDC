@@ -19,9 +19,21 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 1000ms
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: minidc-server
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 management:
   health:
     redis:
+      enabled: false
+    kafka:
       enabled: false
   endpoints:
     web:
@@ -41,3 +53,7 @@ minidc:
     login-limit-per-minute: 5
     register-limit-per-minute: 3
     lease-limit-per-minute: 10
+  kafka:
+    enabled: ${MINIDC_KAFKA_ENABLED:false}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    dlq-topic: minidc.dlq

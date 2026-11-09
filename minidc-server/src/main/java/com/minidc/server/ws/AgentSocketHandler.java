@@ -43,6 +43,12 @@ public class AgentSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final com.minidc.server.redis.RedisStateService redisStateService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.kafka.KafkaEventPublisher kafkaEventPublisher;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.kafka.AgentReconciliationService agentReconciliationService;
+
     public AgentSocketHandler(AgentSessionRegistry sessionRegistry,
                               NodeRepository nodeRepository,
                               LeaseRepository leaseRepository,
@@ -138,6 +144,28 @@ public class AgentSocketHandler extends TextWebSocketHandler {
             case VM_STATS -> {
                 VmStatsPayload payload = objectMapper.treeToValue(msg.payload(), VmStatsPayload.class);
                 log.debug("VM stats for lease {}: cpuPct={}%, memMb={}MB", payload.leaseId(), payload.cpuPct(), payload.memMb());
+                if (kafkaEventPublisher != null) {
+                    kafkaEventPublisher.publishTelemetry(new com.minidc.common.event.TelemetryMetricEvent(
+                            nodeId,
+                            payload.leaseId(),
+                            payload.cpuPct(),
+                            payload.memMb(),
+                            0L,
+                            0L,
+                            Instant.now()
+                    ));
+                }
+            }
+            case RECONCILIATION_REPORT -> {
+                com.minidc.common.event.ReconciliationReport report =
+                        objectMapper.treeToValue(msg.payload(), com.minidc.common.event.ReconciliationReport.class);
+                log.info("Received hypervisor reconciliation report from node {}", nodeId);
+                if (agentReconciliationService != null) {
+                    agentReconciliationService.processReport(report);
+                }
+                if (kafkaEventPublisher != null) {
+                    kafkaEventPublisher.publishReconciliation(report);
+                }
             }
             default -> log.warn("Unhandled message type from node {}: {}", nodeId, msg.type());
         }

@@ -21,6 +21,8 @@ public interface LeaseRepository extends JpaRepository<Lease, UUID> {
 
     List<Lease> findByNodeId(UUID nodeId);
 
+    List<Lease> findByNodeIdAndState(UUID nodeId, LeaseState state);
+
     List<Lease> findByNodeIdIn(Collection<UUID> nodeIds);
 
     List<Lease> findByNodeIdAndStateIn(UUID nodeId, Collection<LeaseState> states);

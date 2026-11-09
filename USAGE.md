@@ -1005,7 +1005,7 @@ Retry-After: 60
 
 ## 15. What Works Now vs. What's Coming
 
-### ✅ Completed Features (Phases 1–3)
+### ✅ Completed Features (Phases 1–4)
 
 | Feature | Status | Phase |
 |---|---|---|
@@ -1024,16 +1024,17 @@ Retry-After: 60
 | Sliding-window API rate limiting (login, register, leases) | ✅ Done | 3 |
 | Node presence tracking with TTL heartbeat | ✅ Done | 3 |
 | In-memory fallback when Redis is unavailable | ✅ Done | 3 |
+| Apache Kafka event streaming & dead letter queue routing | ✅ Done | 4 |
+| High-throughput time-series telemetry buffer (`TelemetryService`) | ✅ Done | 4 |
+| Autonomous agent hypervisor crash reconciliation (`HypervisorReconciler`) | ✅ Done | 4 |
 | Admin panel (invites, banning, audit log, all-nodes, all-leases) | ✅ Done | 1–2 |
 | React frontend (login, register, marketplace, dashboard, leases) | ✅ Done | 1–2 |
-| 40/40 unit tests passing | ✅ Done | 1–3 |
+| 51/51 unit tests passing | ✅ Done | 1–4 |
 
-### 🚧 Coming Soon (Planned Phases 4–10)
+### 🚧 Coming Soon (Planned Phases 5–10)
 
 | Feature | Phase | Why |
 |---|---|---|
-| Apache Kafka event streaming for telemetry | Phase 4 | Stream CPU/RAM metrics from dozens of agents without polling the DB |
-| Agent auto-reconciliation on restart | Phase 4 | Automatically clean up zombie VMs after power outage or crash |
 | WebSocket push (STOMP) for real-time UI updates | Phase 5 | Replace polling with live offer/lease status updates |
 | Live node telemetry dashboard | Phase 5 | Show real-time CPU, RAM, and network load per node |
 | WireGuard VPN egress for VM traffic | Phase 6 | Protect lenders' IPs from DMCA or abuse by routing VM internet through exit gateway |

@@ -21,9 +21,9 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 
 ## 1. Current Project Status
 
-- **Version:** `1.3` — Phases 1–3 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting).
+- **Version:** `1.4` — Phases 1–4 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming).
 - **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
-- **Test Suite Status:** **40/40 unit tests passing** (`mvn test` runs in ~10s with 0 errors, 0 failures).
+- **Test Suite Status:** **51/51 unit tests passing** (`mvn test` runs in ~14s with 0 errors, 0 failures).
 - **Frontend Status:** Clean compilation (`npm run build` bundles 45 modules cleanly into static assets).
 - **Live API Tests:** 10/10 end-to-end integration scenarios verified against running server.
 - **Admin Credentials (dev):** `admin@minidc.local` / `admin12345`
@@ -36,6 +36,7 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
   - Embedded PostgreSQL (`io.zonky.test:embedded-postgres`) for zero-dependency local development via `--spring.profiles.active=dev,embedded`.
   - Testcontainers for integration testing.
 - **Redis:** Sliding-window rate limiting, JWT token blacklisting, distributed locks, and node presence tracking with TTL.
+- **Kafka & Event Backbone:** Apache Kafka KRaft mode event streaming, high-throughput telemetry ring buffer, and autonomous hypervisor reconciler.
 
 > 📖 **Full documentation: [USAGE.md](./USAGE.md)** | Phase tracker: [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 

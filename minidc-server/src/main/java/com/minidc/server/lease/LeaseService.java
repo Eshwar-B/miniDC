@@ -64,6 +64,13 @@ public class LeaseService {
     private final com.minidc.server.redis.DistributedLockService distributedLockService;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.kafka.KafkaEventPublisher kafkaEventPublisher;
+
+    public void setKafkaEventPublisher(com.minidc.server.kafka.KafkaEventPublisher kafkaEventPublisher) {
+        this.kafkaEventPublisher = kafkaEventPublisher;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public LeaseService(LeaseRepository leaseRepository,
                         OfferRepository offerRepository,
@@ -125,6 +132,21 @@ public class LeaseService {
 
         auditService.log(lease.getBorrowerId(), lease.getId(), lease.getNodeId(), "LEASE_" + to, reason);
         Lease saved = leaseRepository.save(lease);
+
+        if (kafkaEventPublisher != null) {
+            try {
+                kafkaEventPublisher.publishLeaseLifecycle(new com.minidc.common.event.LeaseLifecycleEvent(
+                        saved.getId(),
+                        saved.getOfferId(),
+                        saved.getBorrowerId(),
+                        saved.getNodeId(),
+                        to,
+                        reason,
+                        Instant.now()
+                ));
+            } catch (Exception ignored) {
+            }
+        }
 
         if (to == PROVISIONING) {
             String plainPassword = aesGcmCrypto.decrypt(saved.getVmPasswordEnc());

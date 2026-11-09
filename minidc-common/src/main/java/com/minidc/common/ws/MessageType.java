@@ -13,5 +13,6 @@ public enum MessageType {
     CREATE_VM,
     DESTROY_VM,
     PAUSE_NODE,
-    RESUME_NODE
+    RESUME_NODE,
+    RECONCILIATION_REPORT
 }

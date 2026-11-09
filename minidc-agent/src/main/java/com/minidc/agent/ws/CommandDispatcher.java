@@ -32,17 +32,20 @@ public class CommandDispatcher {
     private final HostStats hostStats;
     private final ObjectMapper objectMapper;
     private final ServerConnection serverConnection;
+    private final com.minidc.agent.vm.HypervisorReconciler hypervisorReconciler;
 
     public CommandDispatcher(VmManager vmManager,
                              LimitChecker limitChecker,
                              HostStats hostStats,
                              ObjectMapper objectMapper,
-                             @Lazy ServerConnection serverConnection) {
+                             @Lazy ServerConnection serverConnection,
+                             @Lazy com.minidc.agent.vm.HypervisorReconciler hypervisorReconciler) {
         this.vmManager = vmManager;
         this.limitChecker = limitChecker;
         this.hostStats = hostStats;
         this.objectMapper = objectMapper;
         this.serverConnection = serverConnection;
+        this.hypervisorReconciler = hypervisorReconciler;
     }
 
     public void dispatch(WsMessage message) {
@@ -104,9 +107,16 @@ public class CommandDispatcher {
     }
 
     public void onReconnectReconcile() {
-        List<String> vms = vmManager.listRunningVms();
-        log.info("Reconciling {} running local VMs on reconnection: {}", vms.size(), vms);
-        // TODO(phase-3): Server reconciliation of running VMs on reconnect
+        if (hypervisorReconciler != null) {
+            try {
+                com.minidc.common.event.ReconciliationReport report = hypervisorReconciler.reconcile(java.util.Set.of(), true);
+                log.info("Hypervisor reconciliation on reconnect: found {} VMs, cleaned {} orphans",
+                        report.runningVmNames().size(), report.cleanedVmNames().size());
+                serverConnection.send(MessageType.RECONCILIATION_REPORT, report);
+            } catch (Exception e) {
+                log.error("Failed executing onReconnectReconcile", e);
+            }
+        }
     }
 }
 

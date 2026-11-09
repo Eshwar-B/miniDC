@@ -32,8 +32,8 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 1** | **Foundation & Multi-Hypervisor Baseline** | **COMPLETED** ✅ | 22 / 22 Passed | Committed & pushed as `phase 1 completed` |
 | **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | **COMPLETED** ✅ | 30 / 30 Passed | Committed & pushed as `phase 2 completed` |
 | **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **COMPLETED** ✅ | 40 / 40 Passed | Committed & pushed as `phase 3 completed` |
-| **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 5** | **Real-Time Frontend & Interactive Observability** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **COMPLETED** ✅ | 51 / 51 Passed | Committed & pushed as `phase 4 completed` |
+| **Phase 5** | **Real-Time Frontend & Interactive Observability** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **PLANNED** ⏳ | Pending | Pending |
@@ -107,12 +107,35 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 * **Test Verification:**
   * Added 10 new automated tests (`RedisStateServiceTest`, `DistributedLockServiceTest`, `TokenBlacklistServiceTest`, `RateLimiterFilterTest`), bringing the automated test suite to 40 passing tests.
 
-## 6. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+---
 
-* **Phase 3 (Redis Caching & Rate Limiting):**
-  * *Why:* Eliminate database bottleneck for ephemeral node heartbeats (using Redis key TTL expiration for instant offline detection), add distributed locking via Redisson, and protect APIs against brute force via token-bucket rate limiting.
-* **Phase 4 (Apache Kafka Event Streaming & Agent Resilience):**
-  * *Why:* Stream high-frequency CPU/RAM telemetry from dozens of edge nodes without locking PostgreSQL. Implement autonomous reconciliation on agent restart to clean up zombie VMs from power outages.
+## 6. Completed: Phase 4 (Event-Driven Messaging & Agent Resilience with Kafka)
+
+### 6.1 Objectives & Features Completed
+* **Kafka Event Backbone & Schema Models (`minidc-common/event`):**
+  * Defined canonical Kafka topics: `minidc.telemetry.metrics`, `minidc.lease.lifecycle`, `minidc.audit.events`, `minidc.agent.reconciliation`, and `minidc.dlq`.
+  * Created structured event models: `TelemetryMetricEvent`, `LeaseLifecycleEvent`, `AuditEventMessage`, and `ReconciliationReport`.
+* **Resilient Event Publisher & In-Memory Fallback (`KafkaEventPublisher`):**
+  * Spring Kafka integration using `KafkaTemplate<String, String>` with transparent, thread-safe in-memory subscriber dispatch.
+  * Allows offline local development and tests to execute with zero external broker dependencies while scaling seamlessly to Kafka in Docker/Kubernetes.
+  * Built-in Dead Letter Queue (DLQ) envelope routing for unparseable or failed messages.
+* **Asynchronous Telemetry Ingestion Pipeline (`TelemetryService`, `TelemetryConsumer`, `TelemetryController`):**
+  * Consumer groups process high-frequency CPU, RAM, and disk utilization streams into a bounded 120-point sliding window ring buffer (10 minutes of 5-second metrics) without touching PostgreSQL.
+  * REST endpoints: `GET /api/telemetry/leases/{leaseId}`, `GET /api/telemetry/leases/{leaseId}/latest`, `GET /api/telemetry/nodes/{nodeId}`, and `POST /api/telemetry/ingest`.
+* **Autonomous Hypervisor Reconciliation Engine (`HypervisorReconciler`, `AgentReconciliationService`):**
+  * Edge agents inspect the underlying hypervisor (Libvirt, VirtualBox, or Docker) on boot and reconnect.
+  * Compares running sandbox containers/domains against expected active leases.
+  * Automatically isolates and terminates zombie/orphan VMs left behind by abrupt power outages or crashes.
+  * Emits `ReconciliationReport` back to the server and creates audit log records.
+* **Docker Compose Multi-Broker Infrastructure:**
+  * Added Apache Kafka 3.7.0 service in KRaft mode to `deploy/docker-compose.yml`.
+* **Test Verification:**
+  * Added 11 new automated tests (`KafkaEventPublisherTest`, `TelemetryServiceTest`, `AgentReconciliationServiceTest`, `HypervisorReconcilerTest`), bringing the automated test suite to 51 passing tests with 0 failures.
+
+---
+
+## 7. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+
 * **Phase 5 (Real-Time Frontend via STOMP):**
   * *Why:* Replace client polling with bi-directional WebSocket push so marketplace offers and incoming lease approval requests appear instantly.
 * **Phase 6 (Zero-Trust Network Isolation & WireGuard Egress):**
@@ -128,11 +151,12 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 7. Verification & Test Metrics Log
+## 8. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
 * **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
 * **Phase 3 Tests:** 40 passing tests (including Redis state presence, rate limiting filter, token blacklisting, and distributed locks).
+* **Phase 4 Tests:** 51 passing tests (including Kafka event bus, telemetry sliding-window buffer, and autonomous hypervisor reconciler).
 * **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
   1. Actuator Health (`/actuator/health`) -> `UP`
   2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`
