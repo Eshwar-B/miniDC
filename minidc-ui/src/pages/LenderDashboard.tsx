@@ -3,8 +3,11 @@ import { api } from '../api/client';
 import { LeaseResponse, Node, OfferRequest } from '../api/types';
 import { LeaseCard } from '../components/LeaseCard';
 import { OfferForm } from '../components/OfferForm';
+import { useAuth } from '../auth/AuthContext';
+import { stompManager } from '../ws/stompClient';
 
 export const LenderDashboard: React.FC = () => {
+  const { token } = useAuth();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [incomingLeases, setIncomingLeases] = useState<LeaseResponse[]>([]);
   const [newNodeName, setNewNodeName] = useState('');
@@ -30,11 +33,26 @@ export const LenderDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    // Poll lease and node lists every 10 seconds
-    // TODO(phase-5): Replace polling with live WebSocket/STOMP updates
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const unsubscribers: (() => void)[] = [];
+    if (token) {
+      stompManager.initialize(token);
+      unsubscribers.push(
+        stompManager.subscribe('/topic/leases/incoming', () => {
+          fetchData();
+        })
+      );
+      unsubscribers.push(
+        stompManager.subscribe('/user/queue/leases', () => {
+          fetchData();
+        })
+      );
+    }
+
+    return () => {
+      unsubscribers.forEach((u) => u());
+    };
+  }, [token]);
 
   const handleRegisterNode = async (e: React.FormEvent) => {
     e.preventDefault();

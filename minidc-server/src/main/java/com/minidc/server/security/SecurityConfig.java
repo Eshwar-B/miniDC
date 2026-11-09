@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/actuator/health", "/ws/agent", "/error").permitAll()
+                        .requestMatchers("/api/auth/**", "/actuator/health", "/ws/agent", "/ws/stomp/**", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(rateLimiterFilter, UsernamePasswordAuthenticationFilter.class)

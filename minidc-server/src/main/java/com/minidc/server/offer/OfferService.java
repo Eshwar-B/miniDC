@@ -21,10 +21,17 @@ public class OfferService {
     private final NodeRepository nodeRepository;
     private final AuditService auditService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.ws.stomp.StompNotificationService stompNotificationService;
+
     public OfferService(OfferRepository offerRepository, NodeRepository nodeRepository, AuditService auditService) {
         this.offerRepository = offerRepository;
         this.nodeRepository = nodeRepository;
         this.auditService = auditService;
+    }
+
+    public void setStompNotificationService(com.minidc.server.ws.stomp.StompNotificationService stompNotificationService) {
+        this.stompNotificationService = stompNotificationService;
     }
 
     @Transactional
@@ -53,6 +60,9 @@ public class OfferService {
 
         offerRepository.save(offer);
         auditService.log(ownerId, null, request.nodeId(), "OFFER_CREATED", "Offer created: " + offerId);
+        if (stompNotificationService != null) {
+            stompNotificationService.broadcastOffer(offer, "CREATED");
+        }
         return offer;
     }
 
@@ -78,7 +88,11 @@ public class OfferService {
         offer.setAllowedUserIds(request.allowedUserIds());
 
         auditService.log(ownerId, null, offer.getNodeId(), "OFFER_UPDATED", "Offer updated: " + offerId);
-        return offerRepository.save(offer);
+        Offer saved = offerRepository.save(offer);
+        if (stompNotificationService != null) {
+            stompNotificationService.broadcastOffer(saved, "UPDATED");
+        }
+        return saved;
     }
 
     @Transactional
@@ -96,6 +110,9 @@ public class OfferService {
         offer.setActive(false);
         offerRepository.save(offer);
         auditService.log(ownerId, null, offer.getNodeId(), "OFFER_DELETED", "Offer deactivated: " + offerId);
+        if (stompNotificationService != null) {
+            stompNotificationService.broadcastOffer(offer, "DELETED");
+        }
     }
 
     @Transactional(readOnly = true)

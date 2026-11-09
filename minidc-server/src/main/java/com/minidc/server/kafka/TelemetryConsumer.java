@@ -22,12 +22,19 @@ public class TelemetryConsumer {
     private final KafkaEventPublisher kafkaEventPublisher;
     private final ObjectMapper objectMapper;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.ws.stomp.StompNotificationService stompNotificationService;
+
     public TelemetryConsumer(TelemetryService telemetryService,
                              KafkaEventPublisher kafkaEventPublisher,
                              ObjectMapper objectMapper) {
         this.telemetryService = telemetryService;
         this.kafkaEventPublisher = kafkaEventPublisher;
         this.objectMapper = objectMapper;
+    }
+
+    public void setStompNotificationService(com.minidc.server.ws.stomp.StompNotificationService stompNotificationService) {
+        this.stompNotificationService = stompNotificationService;
     }
 
     @PostConstruct
@@ -58,6 +65,9 @@ public class TelemetryConsumer {
                 event = objectMapper.convertValue(eventObj, TelemetryMetricEvent.class);
             }
             telemetryService.recordMetric(event);
+            if (stompNotificationService != null) {
+                stompNotificationService.broadcastTelemetry(event);
+            }
             log.trace("Recorded telemetry for lease {} / node {}", event.leaseId(), event.nodeId());
         } catch (Exception e) {
             log.error("Failed to process telemetry event: {}", e.getMessage(), e);

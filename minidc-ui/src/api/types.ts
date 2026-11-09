@@ -141,3 +141,13 @@ export interface ApiError {
   message: string;
 }
 
+export interface TelemetryMetric {
+  nodeId: string;
+  leaseId?: string;
+  cpuPercent: number;
+  usedRamMb: number;
+  totalRamMb: number;
+  diskUsedGb: number;
+  timestamp: string;
+}
+

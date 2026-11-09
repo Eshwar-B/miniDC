@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { LeaseResponse } from '../api/types';
 import { Countdown } from './Countdown';
+import { stompManager } from '../ws/stompClient';
 
 interface LeaseCardProps {
   lease: LeaseResponse;
@@ -13,6 +14,17 @@ export const LeaseCard: React.FC<LeaseCardProps> = ({ lease, isLender, onActionC
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectedNotice, setConnectedNotice] = useState<string | null>(null);
+  const [telemetry, setTelemetry] = useState<{ cpuPercent: number; usedRamMb: number } | null>(null);
+
+  useEffect(() => {
+    if (lease.state !== 'ACTIVE') return;
+    const unsub = stompManager.subscribe(`/topic/leases/${lease.id}/telemetry`, (data: any) => {
+      if (data && typeof data.cpuPercent === 'number') {
+        setTelemetry({ cpuPercent: Math.round(data.cpuPercent), usedRamMb: data.usedRamMb || 0 });
+      }
+    });
+    return () => unsub();
+  }, [lease.id, lease.state]);
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -86,6 +98,18 @@ export const LeaseCard: React.FC<LeaseCardProps> = ({ lease, isLender, onActionC
         <div className="lease-timer">
           <span>Time Remaining: </span>
           <Countdown endsAt={lease.endsAt} />
+        </div>
+      )}
+
+      {lease.state === 'ACTIVE' && (
+        <div className="lease-telemetry" style={{ background: 'rgba(0,0,0,0.25)', padding: '10px 14px', borderRadius: '8px', margin: '10px 0', fontSize: '0.85rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span><strong>Live CPU Load:</strong> {telemetry ? `${telemetry.cpuPercent}%` : 'Connecting telemetry...'}</span>
+            <span><strong>RAM Used:</strong> {telemetry && telemetry.usedRamMb > 0 ? `${telemetry.usedRamMb} MB` : `${lease.ramMb} MB reserved`}</span>
+          </div>
+          <div style={{ height: '6px', background: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ width: `${telemetry ? Math.min(100, telemetry.cpuPercent) : 10}%`, height: '100%', background: telemetry && telemetry.cpuPercent > 80 ? '#ef4444' : '#10b981', transition: 'width 0.5s ease' }} />
+          </div>
         </div>
       )}
 

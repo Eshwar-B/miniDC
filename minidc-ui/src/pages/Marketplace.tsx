@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { CreateLeaseRequest, Offer } from '../api/types';
+import { useAuth } from '../auth/AuthContext';
+import { stompManager } from '../ws/stompClient';
 
 export const Marketplace: React.FC = () => {
+  const { token } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [ramMb, setRamMb] = useState<number>(2048);
@@ -29,11 +32,21 @@ export const Marketplace: React.FC = () => {
 
   useEffect(() => {
     fetchOffers();
-    // Poll available offers
-    // TODO(phase-5): WebSocket update on offer availability
-    const interval = setInterval(fetchOffers, 10000);
-    return () => clearInterval(interval);
-  }, []);
+
+    let unsubscribe: (() => void) | undefined;
+    if (token) {
+      stompManager.initialize(token);
+      unsubscribe = stompManager.subscribe('/topic/offers', () => {
+        fetchOffers();
+      });
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [token]);
 
   const handleSelectOffer = (offer: Offer) => {
     setSelectedOffer(offer);

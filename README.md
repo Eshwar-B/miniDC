@@ -6,7 +6,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)]()
 [![React](https://img.shields.io/badge/React-18%20%7C%20Vite%20%7C%20TS-61dafb.svg)]()
 [![Hypervisors](https://img.shields.io/badge/Hypervisors-KVM%20%7C%20VirtualBox%20%7C%20Docker-blueviolet.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-40%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-53%20passing-brightgreen.svg)]()
 
 MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve).
@@ -21,10 +21,10 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 
 ## 1. Current Project Status
 
-- **Version:** `1.4` — Phases 1–4 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming).
+- **Version:** `1.5` — Phases 1–5 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets & Observability).
 - **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
-- **Test Suite Status:** **51/51 unit tests passing** (`mvn test` runs in ~14s with 0 errors, 0 failures).
-- **Frontend Status:** Clean compilation (`npm run build` bundles 45 modules cleanly into static assets).
+- **Test Suite Status:** **53/53 unit tests passing** (`mvn test` runs in ~16s with 0 errors, 0 failures).
+- **Frontend Status:** Clean compilation (`npm run build` bundles 65 modules cleanly into static assets).
 - **Live API Tests:** 10/10 end-to-end integration scenarios verified against running server.
 - **Admin Credentials (dev):** `admin@minidc.local` / `admin12345`
 - **Driver Support:**
@@ -37,6 +37,7 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
   - Testcontainers for integration testing.
 - **Redis:** Sliding-window rate limiting, JWT token blacklisting, distributed locks, and node presence tracking with TTL.
 - **Kafka & Event Backbone:** Apache Kafka KRaft mode event streaming, high-throughput telemetry ring buffer, and autonomous hypervisor reconciler.
+- **Real-Time WebSockets (STOMP):** Bi-directional STOMP WebSocket push (`/ws/stomp`) with JWT channel authentication, zero-polling marketplace updates, instant lease approval dispatches, and live CPU/RAM telemetry gauges on lease cards.
 
 > 📖 **Full documentation: [USAGE.md](./USAGE.md)** | Phase tracker: [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 

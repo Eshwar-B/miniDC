@@ -33,8 +33,8 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | **COMPLETED** ✅ | 30 / 30 Passed | Committed & pushed as `phase 2 completed` |
 | **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **COMPLETED** ✅ | 40 / 40 Passed | Committed & pushed as `phase 3 completed` |
 | **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **COMPLETED** ✅ | 51 / 51 Passed | Committed & pushed as `phase 4 completed` |
-| **Phase 5** | **Real-Time Frontend & Interactive Observability** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 5** | **Real-Time Frontend & Interactive Observability** | **COMPLETED** ✅ | 53 / 53 Passed | Committed & pushed as `phase 5 completed` |
+| **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 9** | **Marketplace Economics, Credits & Monetization** | **PLANNED** ⏳ | Pending | Pending |
@@ -134,10 +134,35 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 7. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+## 7. Completed: Phase 5 (Real-Time Frontend & Interactive Observability)
 
-* **Phase 5 (Real-Time Frontend via STOMP):**
-  * *Why:* Replace client polling with bi-directional WebSocket push so marketplace offers and incoming lease approval requests appear instantly.
+### 7.1 Objectives & Features Completed
+* **STOMP WebSocket Broker (`StompWebSocketConfig`):**
+  * Configured bi-directional message broker over `/ws/stomp` with SockJS fallback and CORS support.
+  * Defined prefix conventions: `/topic` (public broadcast), `/queue` and `/user` (point-to-point private notifications).
+* **JWT Authenticated STOMP Interceptor (`StompAuthChannelInterceptor`):**
+  * Authenticates incoming STOMP `CONNECT` frames via Bearer token in headers (`Authorization` or `token`).
+  * Injects authenticated `CurrentUser` into Spring Security context with seamless fallback for immutable header wrappers.
+* **Real-Time Notification Dispatcher (`StompNotificationService`):**
+  * `/topic/offers`: Instant marketplace updates when offers are published, updated, or removed (zero-polling browsing).
+  * `/topic/leases/incoming`: Real-time push to lenders when manual-approval lease requests arrive.
+  * `/user/{userId}/queue/leases`: Targeted lifecycle updates to borrowers and lenders upon lease approval, provisioning, or termination.
+  * `/topic/leases/{leaseId}/telemetry`: High-frequency push of live CPU load percentage and RAM usage.
+* **Frontend Real-Time Architecture (`minidc-ui`):**
+  * Integrated `@stomp/stompjs` with resilient auto-reconnect and token injection (`stompClient.ts`).
+  * `Marketplace`: Replaced HTTP polling intervals with live `/topic/offers` subscriptions.
+  * `LenderDashboard`: Instant notifications on pending lease requests via `/topic/leases/incoming`.
+  * `MyLeases`: Live lease state transitions without manual page reloads.
+  * `LeaseCard`: Live animated telemetry gauges showing real-time CPU utilization (%) and RAM consumption.
+  * Updated `vite.config.ts` to reverse-proxy `/ws` WebSocket connections to backend port 8080.
+* **Test Verification:**
+  * Added automated tests for STOMP notifications and interceptor token verification (`StompNotificationServiceTest`, `StompAuthChannelInterceptorTest`), bringing total passing tests to 53.
+  * Frontend compilation verified: 65 modules transformed cleanly with zero TypeScript errors.
+
+---
+
+## 8. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+
 * **Phase 6 (Zero-Trust Network Isolation & WireGuard Egress):**
   * *Why:* Protect lender residential IPs from guest abuse or DMCA notices by funneling all guest internet traffic through a centralized WireGuard exit gateway, and dropping local LAN access.
 * **Phase 7 (AI Matchmaking & Anomaly Detection):**
@@ -151,12 +176,13 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 8. Verification & Test Metrics Log
+## 9. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
 * **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
 * **Phase 3 Tests:** 40 passing tests (including Redis state presence, rate limiting filter, token blacklisting, and distributed locks).
 * **Phase 4 Tests:** 51 passing tests (including Kafka event bus, telemetry sliding-window buffer, and autonomous hypervisor reconciler).
+* **Phase 5 Tests:** 53 passing tests (including STOMP WebSocket notification dispatcher and JWT channel security interceptor).
 * **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
   1. Actuator Health (`/actuator/health`) -> `UP`
   2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`
@@ -168,5 +194,5 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
   8. Marketplace Browsing & Node Status (`/api/offers/available`, `/api/nodes/mine`) -> `200 OK`
   9. Redis Rate Limiter Brute-Force Defense -> `429 Too Many Requests (Blocked by Redis Filter)`
   10. JWT Token Blacklist & Session Revocation (`/api/auth/logout`) -> `204 No Content`, subsequent calls rejected with `403 Forbidden`
-* **Frontend:** 45 modules cleanly compiled into production bundle (`dist/`).
+* **Frontend:** 65 modules cleanly compiled into production bundle (`dist/`).
 * **Current Git Branch:** `main` (Remote: `https://github.com/Eshwar-B/miniDC.git`)

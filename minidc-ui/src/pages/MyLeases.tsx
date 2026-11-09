@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { LeaseResponse } from '../api/types';
 import { LeaseCard } from '../components/LeaseCard';
+import { useAuth } from '../auth/AuthContext';
+import { stompManager } from '../ws/stompClient';
 
 export const MyLeases: React.FC = () => {
+  const { token } = useAuth();
   const [leases, setLeases] = useState<LeaseResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +25,21 @@ export const MyLeases: React.FC = () => {
 
   useEffect(() => {
     fetchLeases();
-    // Poll lease list every 10 seconds
-    // TODO(phase-5): Real-time updates via WebSocket / STOMP
-    const interval = setInterval(fetchLeases, 10000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const unsubscribers: (() => void)[] = [];
+    if (token) {
+      stompManager.initialize(token);
+      unsubscribers.push(
+        stompManager.subscribe('/user/queue/leases', () => {
+          fetchLeases();
+        })
+      );
+    }
+
+    return () => {
+      unsubscribers.forEach((u) => u());
+    };
+  }, [token]);
 
   return (
     <div className="leases-page-container">

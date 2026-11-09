@@ -67,8 +67,15 @@ public class LeaseService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.minidc.server.kafka.KafkaEventPublisher kafkaEventPublisher;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.ws.stomp.StompNotificationService stompNotificationService;
+
     public void setKafkaEventPublisher(com.minidc.server.kafka.KafkaEventPublisher kafkaEventPublisher) {
         this.kafkaEventPublisher = kafkaEventPublisher;
+    }
+
+    public void setStompNotificationService(com.minidc.server.ws.stomp.StompNotificationService stompNotificationService) {
+        this.stompNotificationService = stompNotificationService;
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -144,6 +151,13 @@ public class LeaseService {
                         reason,
                         Instant.now()
                 ));
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (stompNotificationService != null) {
+            try {
+                stompNotificationService.broadcastLease(saved, "STATE_CHANGED");
             } catch (Exception ignored) {
             }
         }
@@ -278,6 +292,13 @@ public class LeaseService {
 
         Lease saved = leaseRepository.save(lease);
         auditService.log(borrowerId, leaseId, node.getId(), "LEASE_CREATED", "Lease created in state " + initialState);
+
+        if (stompNotificationService != null) {
+            try {
+                stompNotificationService.broadcastLease(saved, "CREATED");
+            } catch (Exception ignored) {
+            }
+        }
 
         if (initialState == APPROVED) {
             transition(saved.getId(), PROVISIONING, "Auto-approved");
