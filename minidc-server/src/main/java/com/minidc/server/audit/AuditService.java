@@ -2,6 +2,8 @@ package com.minidc.server.audit;
 
 import com.minidc.common.event.AuditEventMessage;
 import com.minidc.server.kafka.KafkaEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -16,6 +18,8 @@ import java.util.UUID;
  */
 @Service
 public class AuditService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuditService.class);
 
     private final AuditLogRepository auditLogRepository;
 
@@ -39,7 +43,8 @@ public class AuditService {
         if (kafkaEventPublisher != null) {
             try {
                 kafkaEventPublisher.publishAuditEvent(new AuditEventMessage(actorId, leaseId, nodeId, event, detail, now));
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                log.debug("Asynchronous audit event publishing skipped: {}", e.getMessage());
             }
         }
     }
