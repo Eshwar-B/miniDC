@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { AuditLog, EgressStatus, InviteResponse, LeaseResponse, Node, TrafficVerificationResult } from '../api/types';
+import { AbuseAlert, AuditLog, EgressStatus, InviteResponse, LeaseResponse, Node, TrafficVerificationResult } from '../api/types';
 
 export const AdminPage: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [leases, setLeases] = useState<LeaseResponse[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [abuseAlerts, setAbuseAlerts] = useState<AbuseAlert[]>([]);
   const [egressStatus, setEgressStatus] = useState<EgressStatus | null>(null);
   const [createdInvite, setCreatedInvite] = useState<InviteResponse | null>(null);
   const [banUserId, setBanUserId] = useState<string>('');
@@ -17,16 +18,18 @@ export const AdminPage: React.FC = () => {
 
   const fetchAdminData = async () => {
     try {
-      const [fetchedNodes, fetchedLeases, fetchedLogs, fetchedEgress] = await Promise.all([
+      const [fetchedNodes, fetchedLeases, fetchedLogs, fetchedEgress, fetchedAlerts] = await Promise.all([
         api.getAdminNodes(),
         api.getAdminLeases(),
         api.getAdminAudit(),
         api.getEgressStatus().catch(() => null),
+        api.getAdminAbuseAlerts().catch(() => []),
       ]);
       setNodes(fetchedNodes);
       setLeases(fetchedLeases);
       setAuditLogs(fetchedLogs);
       if (fetchedEgress) setEgressStatus(fetchedEgress);
+      if (fetchedAlerts) setAbuseAlerts(fetchedAlerts);
     } catch (err: any) {
       setError(err.message || 'Failed fetching admin data');
     } finally {
@@ -170,6 +173,44 @@ export const AdminPage: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card mt-4">
+        <h3>AI Anomaly & Sandbox Abuse Alerts ({abuseAlerts.length})</h3>
+        <p className="text-muted">Real-time heuristics detecting cryptomining, resource starvation, and suspicious activity</p>
+
+        {abuseAlerts.length === 0 ? (
+          <p className="empty-hint" style={{ color: '#10b981' }}>✓ All active sandboxes operating within normal parameters. Zero abuse detected.</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Confidence</th>
+                <th>Lease ID</th>
+                <th>Details</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {abuseAlerts.map((alert) => (
+                <tr key={alert.alertId}>
+                  <td><small>{new Date(alert.detectedAt).toLocaleTimeString()}</small></td>
+                  <td><span className="badge badge-danger">{alert.type}</span></td>
+                  <td><strong>{(alert.confidenceScore * 100).toFixed(0)}%</strong></td>
+                  <td><code>{alert.leaseId.substring(0, 8)}</code></td>
+                  <td>{alert.details}</td>
+                  <td>
+                    <span className={`badge ${alert.autoTerminated ? 'badge-danger' : 'badge-warning'}`}>
+                      {alert.autoTerminated ? 'AUTO-TERMINATED' : 'FLAGGED'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card mt-4">

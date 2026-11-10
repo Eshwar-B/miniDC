@@ -6,7 +6,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)]()
 [![React](https://img.shields.io/badge/React-18%20%7C%20Vite%20%7C%20TS-61dafb.svg)]()
 [![Hypervisors](https://img.shields.io/badge/Hypervisors-KVM%20%7C%20VirtualBox%20%7C%20Docker-blueviolet.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-73%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-84%20passing-brightgreen.svg)]()
 
 MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve).
@@ -21,9 +21,9 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 
 ## 1. Current Project Status
 
-- **Version:** `1.6` — Phases 1–6 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation & WireGuard Egress).
+- **Version:** `1.7` — Phases 1–7 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation + AI Matchmaking & Abuse Detection).
 - **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
-- **Test Suite Status:** **73/73 unit tests passing** (`mvn test` runs in ~23s with 0 errors, 0 failures).
+- **Test Suite Status:** **84/84 unit tests passing** (`mvn test` runs in ~25s with 0 errors, 0 failures).
 - **Frontend Status:** Clean compilation (`npm run build` bundles 65 modules cleanly into static assets).
 - **Live API Tests:** 10/10 end-to-end integration scenarios verified against running server.
 - **Admin Credentials (dev):** `admin@minidc.local` / `admin12345`
@@ -39,6 +39,7 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - **Kafka & Event Backbone:** Apache Kafka KRaft mode event streaming, high-throughput telemetry ring buffer, and autonomous hypervisor reconciler.
 - **Real-Time WebSockets (STOMP):** Bi-directional STOMP WebSocket push (`/ws/stomp`) with JWT channel authentication, zero-polling marketplace updates, instant lease approval dispatches, and live CPU/RAM telemetry gauges on lease cards.
 - **Zero-Trust Network Isolation & WireGuard Egress:** Strict RFC 1918 private LAN blocking (`nftables` on Linux, Defender Firewall on Windows), anti-spam/anti-abuse port filters (SMTP 25/465/587 and outbound SSH 22 blocked), X25519 WireGuard client tunnel manager, and centralized exit gateway IP pool allocation.
+- **AI Matchmaking, Scheduling & Abuse Detection:** Heuristic node reliability scoring (A+ through F), smart multi-factor offer recommendation assistant, real-time cryptomining heuristic detection (pinned 95%+ CPU over 3 windows), and automated lease quarantine.
 
 > 📖 **Full documentation: [USAGE.md](./USAGE.md)** | Phase tracker: [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 

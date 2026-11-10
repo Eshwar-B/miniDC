@@ -13,6 +13,7 @@ public final class KafkaTopics {
     public static final String TOPIC_AUDIT = "minidc.audit.events";
     public static final String TOPIC_AGENT_COMMANDS = "minidc.agent.commands";
     public static final String TOPIC_RECONCILIATION = "minidc.agent.reconciliation";
+    public static final String TOPIC_ABUSE_ALERTS = "minidc.abuse.alerts";
     public static final String TOPIC_DLQ = "minidc.dlq";
 }
 

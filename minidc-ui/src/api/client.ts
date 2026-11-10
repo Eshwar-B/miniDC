@@ -156,5 +156,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ targetIp, targetPort }),
     }),
+
+  // AI Matchmaking & Abuse Detection
+  recommendOffers: (spec: { ramMb: number; cores: number; diskGb: number; hours: number }) =>
+    request<import('./types').ScoredOfferRecommendation[]>('/api/offers/recommend', {
+      method: 'POST',
+      body: JSON.stringify(spec),
+    }),
+
+  getNodeReliability: (nodeId: string) =>
+    request<import('./types').NodeReliabilityAssessment>(`/api/nodes/${nodeId}/reliability`),
+
+  getAdminAbuseAlerts: () =>
+    request<import('./types').AbuseAlert[]>('/api/admin/abuse-alerts'),
 };
 

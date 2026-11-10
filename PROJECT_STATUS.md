@@ -35,8 +35,8 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **COMPLETED** ✅ | 51 / 51 Passed | Committed & pushed as `phase 4 completed` |
 | **Phase 5** | **Real-Time Frontend & Interactive Observability** | **COMPLETED** ✅ | 53 / 53 Passed | Committed & pushed as `phase 5 completed` |
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **COMPLETED** ✅ | 73 / 73 Passed | Committed & pushed as `phase 6 completed` |
-| **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **COMPLETED** ✅ | 84 / 84 Passed | Committed & pushed as `phase 7 completed` |
+| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 9** | **Marketplace Economics, Credits & Monetization** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **PLANNED** ⏳ | Pending | Pending |
 
@@ -198,10 +198,40 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 9. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+## 9. Completed: Phase 7 (AI Matchmaking, Scheduling & Abuse Detection)
 
-* **Phase 7 (AI Matchmaking & Anomaly Detection):**
-  * *Why:* Match workloads based on predicted node reliability and automatically shut down rogue sandboxes attempting cryptomining or port scanning.
+### 9.1 Objectives & Features Completed
+* **Node Reliability Scorer (`NodeReliabilityScorer.java`)**:
+  * Computes an aggregate health & reliability score ($0.0 - 100.0\%$) and grade (A+ through F) based on:
+    * Freshness of agent heartbeat latencies.
+    * Host memory and core headroom capacity bonuses.
+    * Host telemetry load average penalties.
+* **Intelligent Matchmaker & Scheduler (`SmartMatchmaker.java`)**:
+  * Evaluates and ranks active marketplace offers against borrower requested specifications (`ramMb`, `cores`, `diskGb`, `hours`).
+  * Enforces lender availability windows (`windowStart` - `windowEnd`) verifying full duration feasibility.
+  * Multi-factor scoring prioritizing reliability ($50\%$), resource allocation fit ($30\%$), and instant auto-approval ($20\%$).
+  * Generates actionable human-readable recommendation reasons.
+* **Real-Time Cryptomining & Sandbox Abuse Detection Engine (`AbuseDetectionEngine.java`)**:
+  * Inspects high-frequency telemetry metrics for malicious sandbox activity.
+  * Cryptomining Heuristic: Detects pinned $\ge 95\%$ CPU usage across 3 consecutive reporting windows (confidence $0.95$).
+  * Memory Exhaustion Heuristic: Detects critical memory allocation exceeding $98\%$ of allocated quota (confidence $0.88$).
+  * Automated Quarantine: Auto-terminates rogue leases via `leaseService.kill` when confidence $\ge 0.90$.
+  * Emits `AbuseAlertEvent` to Kafka topic `minidc.abuse.alerts` and tracks recent alerts for platform audits.
+* **Matchmaking & Anomaly REST API (`MatchmakingController.java`)**:
+  * `POST /api/offers/recommend`: Returns top-ranked offer recommendations.
+  * `GET /api/nodes/{nodeId}/reliability`: Returns node reliability metrics and letter grade.
+  * `GET /api/admin/abuse-alerts`: Returns recent security alerts and auto-quarantine actions.
+* **Frontend UI Enhancements (`minidc-ui`)**:
+  * `Marketplace`: Integrated AI Smart Matchmaker recommendation assistant with instant top-match selection and score badges.
+  * `AdminPage`: Added AI Anomaly & Sandbox Abuse Alerts live monitor.
+* **Test Verification**:
+  * Added 11 new automated unit and integration tests across server and agent (`NodeReliabilityScorerTest`, `SmartMatchmakerTest`, `AbuseDetectionEngineTest`, `MatchmakingControllerTest`).
+  * Total automated test count increased to **84 / 84 passing tests (100% success)**.
+
+---
+
+## 10. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+
 * **Phase 8 (Persistent Storage Volumes):**
   * *Why:* Allow borrowers to retain their `/home` directory across leases through encrypted snapshot syncing to S3/MinIO.
 * **Phase 9 (Marketplace Economics & Billing):**
@@ -211,7 +241,7 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 10. Verification & Test Metrics Log
+## 11. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
 * **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
@@ -219,6 +249,7 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 * **Phase 4 Tests:** 51 passing tests (including Kafka event bus, telemetry sliding-window buffer, and autonomous hypervisor reconciler).
 * **Phase 5 Tests:** 53 passing tests (including STOMP WebSocket notification dispatcher and JWT channel security interceptor).
 * **Phase 6 Tests:** 73 passing tests (including X25519 WireGuard crypto, zero-trust IP/port policy enforcement, WireGuard IP pool allocator, and firewall manager).
+* **Phase 7 Tests:** 84 passing tests (including node reliability scoring, intelligent matchmaking, cryptomining anomaly detection, and automated lease quarantine).
 * **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
   1. Actuator Health (`/actuator/health`) -> `UP`
   2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`

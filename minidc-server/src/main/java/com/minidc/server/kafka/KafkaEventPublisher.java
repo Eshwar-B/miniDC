@@ -1,6 +1,7 @@
 package com.minidc.server.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minidc.common.event.AbuseAlertEvent;
 import com.minidc.common.event.AuditEventMessage;
 import com.minidc.common.event.KafkaTopics;
 import com.minidc.common.event.LeaseLifecycleEvent;
@@ -64,6 +65,11 @@ public class KafkaEventPublisher {
 
     public void publishReconciliation(ReconciliationReport event) {
         send(KafkaTopics.TOPIC_RECONCILIATION, event.nodeId().toString(), event);
+    }
+
+    public void publishAbuseAlert(AbuseAlertEvent event) {
+        String key = event.leaseId() != null ? event.leaseId().toString() : event.nodeId().toString();
+        send(KafkaTopics.TOPIC_ABUSE_ALERTS, key, event);
     }
 
     public void sendToDlq(String originalTopic, String key, Object payload, String errorReason) {

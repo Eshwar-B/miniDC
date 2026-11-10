@@ -25,6 +25,9 @@ public class TelemetryConsumer {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.minidc.server.ws.stomp.StompNotificationService stompNotificationService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.ai.AbuseDetectionEngine abuseDetectionEngine;
+
     public TelemetryConsumer(TelemetryService telemetryService,
                              KafkaEventPublisher kafkaEventPublisher,
                              ObjectMapper objectMapper) {
@@ -35,6 +38,10 @@ public class TelemetryConsumer {
 
     public void setStompNotificationService(com.minidc.server.ws.stomp.StompNotificationService stompNotificationService) {
         this.stompNotificationService = stompNotificationService;
+    }
+
+    public void setAbuseDetectionEngine(com.minidc.server.ai.AbuseDetectionEngine abuseDetectionEngine) {
+        this.abuseDetectionEngine = abuseDetectionEngine;
     }
 
     @PostConstruct
@@ -67,6 +74,9 @@ public class TelemetryConsumer {
             telemetryService.recordMetric(event);
             if (stompNotificationService != null) {
                 stompNotificationService.broadcastTelemetry(event);
+            }
+            if (abuseDetectionEngine != null) {
+                abuseDetectionEngine.analyzeMetric(event);
             }
             log.trace("Recorded telemetry for lease {} / node {}", event.leaseId(), event.nodeId());
         } catch (Exception e) {

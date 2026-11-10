@@ -176,3 +176,35 @@ export interface TrafficVerificationResult {
   reason: string;
 }
 
+export interface MatchmakingScore {
+  offerId: string;
+  nodeId: string;
+  score: number;
+  reliabilityPercent: number;
+  recommendationReason: string;
+}
+
+export interface ScoredOfferRecommendation {
+  offer: Offer;
+  node: Node;
+  matchScore: MatchmakingScore;
+}
+
+export interface NodeReliabilityAssessment {
+  score: number;
+  reliabilityPercent: number;
+  grade: string;
+  summary: string;
+}
+
+export interface AbuseAlert {
+  alertId: string;
+  leaseId: string;
+  nodeId: string;
+  type: 'CRYPTOMINING' | 'PORT_SCANNING' | 'RESOURCE_EXHAUSTION' | 'ABNORMAL_EGRESS';
+  confidenceScore: number;
+  details: string;
+  detectedAt: string;
+  autoTerminated: boolean;
+}
+

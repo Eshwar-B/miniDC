@@ -356,17 +356,24 @@ public class LeaseService {
     }
 
     @Transactional
+    public Lease kill(UUID leaseId, String reason) {
+        return kill(leaseId, null, reason);
+    }
+
+    @Transactional
     public Lease kill(UUID leaseId, UUID userId, String reason) {
         Lease lease = leaseRepository.findById(leaseId)
                 .orElseThrow(() -> new IllegalArgumentException("Lease not found: " + leaseId));
 
-        Node node = nodeRepository.findById(lease.getNodeId())
-                .orElseThrow(() -> new IllegalArgumentException("Node not found: " + lease.getNodeId()));
+        if (userId != null) {
+            Node node = nodeRepository.findById(lease.getNodeId())
+                    .orElseThrow(() -> new IllegalArgumentException("Node not found: " + lease.getNodeId()));
 
-        if (!node.getOwnerId().equals(userId)) {
-            User caller = userRepository.findById(userId).orElse(null);
-            if (caller == null || caller.getRole() != com.minidc.common.enums.Role.ADMIN) {
-                throw new IllegalArgumentException("Unauthorized: Only lender or admin can kill this lease");
+            if (!node.getOwnerId().equals(userId)) {
+                User caller = userRepository.findById(userId).orElse(null);
+                if (caller == null || caller.getRole() != com.minidc.common.enums.Role.ADMIN) {
+                    throw new IllegalArgumentException("Unauthorized: Only lender or admin can kill this lease");
+                }
             }
         }
 

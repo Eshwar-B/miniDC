@@ -1005,7 +1005,7 @@ Retry-After: 60
 
 ## 15. What Works Now vs. What's Coming
 
-### ✅ Completed Features (Phases 1–6)
+### ✅ Completed Features (Phases 1–7)
 
 | Feature | Status | Phase |
 |---|---|---|
@@ -1036,16 +1036,19 @@ Retry-After: 60
 | WireGuard Curve25519/X25519 key generation & `wg0.conf` renderer | ✅ Done | 6 |
 | WireGuard exit gateway IP pool allocator (`10.44.0.0/24`) | ✅ Done | 6 |
 | Egress verification API (`POST /api/egress/verify`) & UI simulator | ✅ Done | 6 |
-| Admin panel (invites, banning, audit log, all-nodes, all-leases, egress) | ✅ Done | 1–6 |
-| React frontend (login, register, marketplace, dashboard, leases, admin) | ✅ Done | 1–6 |
-| 73/73 unit tests passing | ✅ Done | 1–6 |
+| Node reliability assessment & grading (A+ through F) | ✅ Done | 7 |
+| AI Smart Matchmaker recommendation engine (`POST /api/offers/recommend`) | ✅ Done | 7 |
+| Real-time cryptomining heuristic detection (95%+ CPU sustained) | ✅ Done | 7 |
+| Memory runaway / exhaustion abuse detection | ✅ Done | 7 |
+| Automated rogue sandbox quarantine (`leaseService.kill`) | ✅ Done | 7 |
+| Admin panel (invites, banning, audit log, all-nodes, all-leases, egress, abuse alerts) | ✅ Done | 1–7 |
+| React frontend (login, register, marketplace, dashboard, leases, admin) | ✅ Done | 1–7 |
+| 84/84 unit tests passing | ✅ Done | 1–7 |
 
-### 🚧 Coming Soon (Planned Phases 7–10)
+### 🚧 Coming Soon (Planned Phases 8–10)
 
 | Feature | Phase | Why |
 |---|---|---|
-| AI-powered workload matchmaking | Phase 7 | Match borrower requests to the most reliable/compatible node using ML |
-| Anomaly detection (cryptomining, port scanning) | Phase 7 | Automatically terminate rogue sandboxes |
 | Persistent home directory snapshots (MinIO/S3) | Phase 8 | Allow borrowers to retain `/home` data across leases |
 | Compute credits and billing | Phase 9 | Fair credit exchange and Stripe payouts for lenders |
 | Kubernetes deployment + Helm charts | Phase 10 | Production high-availability clustering |
