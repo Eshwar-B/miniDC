@@ -48,5 +48,22 @@ public record AgentProperties(
             probeHost = "127.0.0.1";
         }
     }
+
+    public static AgentProperties testDefault(boolean dryRun) {
+        return new AgentProperties(
+                "ws://localhost:8080/ws/agent",
+                UUID.randomUUID(),
+                "test-agent-token",
+                "docker",
+                "127.0.0.1",
+                "./data/images",
+                "./data/leases",
+                25,
+                "33000-33999",
+                dryRun,
+                "minidc-desktop:latest",
+                "127.0.0.1"
+        );
+    }
 }
 

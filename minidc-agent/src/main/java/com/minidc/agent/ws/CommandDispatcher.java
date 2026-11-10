@@ -33,28 +33,50 @@ public class CommandDispatcher {
     private final ObjectMapper objectMapper;
     private final ServerConnection serverConnection;
     private final com.minidc.agent.vm.HypervisorReconciler hypervisorReconciler;
+    private final com.minidc.agent.net.EgressRules egressRules;
+    private final com.minidc.agent.net.WireGuardTunnelManager wireGuardTunnelManager;
 
     public CommandDispatcher(VmManager vmManager,
                              LimitChecker limitChecker,
                              HostStats hostStats,
                              ObjectMapper objectMapper,
                              @Lazy ServerConnection serverConnection,
-                             @Lazy com.minidc.agent.vm.HypervisorReconciler hypervisorReconciler) {
+                             @Lazy com.minidc.agent.vm.HypervisorReconciler hypervisorReconciler,
+                             @Lazy com.minidc.agent.net.EgressRules egressRules,
+                             @Lazy com.minidc.agent.net.WireGuardTunnelManager wireGuardTunnelManager) {
         this.vmManager = vmManager;
         this.limitChecker = limitChecker;
         this.hostStats = hostStats;
         this.objectMapper = objectMapper;
         this.serverConnection = serverConnection;
         this.hypervisorReconciler = hypervisorReconciler;
+        this.egressRules = egressRules;
+        this.wireGuardTunnelManager = wireGuardTunnelManager;
     }
 
     public void dispatch(WsMessage message) {
         switch (message.type()) {
             case CREATE_VM -> handleCreateVm(message);
             case DESTROY_VM -> handleDestroyVm(message);
+            case EGRESS_CONFIG -> handleEgressConfig(message);
             case PAUSE_NODE -> log.info("Received PAUSE_NODE command from server");
             case RESUME_NODE -> log.info("Received RESUME_NODE command from server");
             default -> log.warn("Unhandled server command type: {}", message.type());
+        }
+    }
+
+    private void handleEgressConfig(WsMessage message) {
+        try {
+            com.minidc.common.model.WireGuardPeerConfig config = objectMapper.treeToValue(
+                    message.payload(),
+                    com.minidc.common.model.WireGuardPeerConfig.class
+            );
+            log.info("Applying WireGuard egress configuration for interface {}", config.interfaceAddress());
+            if (wireGuardTunnelManager != null) {
+                wireGuardTunnelManager.startTunnel(config);
+            }
+        } catch (Exception e) {
+            log.error("Failed to apply WireGuard egress configuration", e);
         }
     }
 
@@ -84,6 +106,9 @@ public class CommandDispatcher {
             }
 
             VmReadyPayload ready = vmManager.create(payload);
+            if (egressRules != null) {
+                egressRules.applyLeaseInboundRule(payload.leaseId(), ready.port());
+            }
             serverConnection.send(MessageType.VM_READY, ready);
         } catch (Exception e) {
             log.error("Error executing CREATE_VM", e);
@@ -100,6 +125,9 @@ public class CommandDispatcher {
             log.info("Processing DESTROY_VM instruction for lease {}", payload.leaseId());
 
             vmManager.destroy(payload.leaseId());
+            if (egressRules != null) {
+                egressRules.removeLeaseInboundRule(payload.leaseId());
+            }
             serverConnection.send(MessageType.VM_DESTROYED, payload);
         } catch (Exception e) {
             log.error("Error executing DESTROY_VM", e);

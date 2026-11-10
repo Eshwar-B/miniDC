@@ -167,6 +167,26 @@ export const LenderDashboard: React.FC = () => {
               ))}
             </div>
           )}
+
+          <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#111827', borderRadius: '8px', border: '1px solid #1f2937' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>🛡️</span> Zero-Trust Host & LAN Protection
+            </h4>
+            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#9ca3af' }}>
+              Guest sandboxes are strictly isolated from your private home network. Your router, NAS, and LAN devices cannot be reached by VMs.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem', fontSize: '0.8rem' }}>
+              <div style={{ background: '#1f2937', padding: '0.5rem', borderRadius: '4px' }}>
+                <span style={{ color: '#10b981' }}>●</span> <strong>LAN Subnets:</strong> BLOCKED
+              </div>
+              <div style={{ background: '#1f2937', padding: '0.5rem', borderRadius: '4px' }}>
+                <span style={{ color: '#10b981' }}>●</span> <strong>WireGuard Egress:</strong> ENFORCED
+              </div>
+              <div style={{ background: '#1f2937', padding: '0.5rem', borderRadius: '4px' }}>
+                <span style={{ color: '#10b981' }}>●</span> <strong>SMTP/SSH-Out:</strong> FILTERED
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="section-card">

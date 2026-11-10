@@ -1005,7 +1005,7 @@ Retry-After: 60
 
 ## 15. What Works Now vs. What's Coming
 
-### ✅ Completed Features (Phases 1–5)
+### ✅ Completed Features (Phases 1–6)
 
 | Feature | Status | Phase |
 |---|---|---|
@@ -1031,22 +1031,24 @@ Retry-After: 60
 | Live marketplace sync (`/topic/offers`) with zero polling | ✅ Done | 5 |
 | Targeted lease lifecycle notifications (`/user/{id}/queue/leases`) | ✅ Done | 5 |
 | Real-time CPU & RAM live telemetry gauges on lease cards | ✅ Done | 5 |
-| Admin panel (invites, banning, audit log, all-nodes, all-leases) | ✅ Done | 1–2 |
-| React frontend (login, register, marketplace, dashboard, leases) | ✅ Done | 1–5 |
-| 53/53 unit tests passing | ✅ Done | 1–5 |
+| Zero-Trust LAN isolation (RFC 1918 subnets blocked on Linux & Windows) | ✅ Done | 6 |
+| Anti-spam/anti-abuse port filter (SMTP 25/465/587, SSH 22 blocked) | ✅ Done | 6 |
+| WireGuard Curve25519/X25519 key generation & `wg0.conf` renderer | ✅ Done | 6 |
+| WireGuard exit gateway IP pool allocator (`10.44.0.0/24`) | ✅ Done | 6 |
+| Egress verification API (`POST /api/egress/verify`) & UI simulator | ✅ Done | 6 |
+| Admin panel (invites, banning, audit log, all-nodes, all-leases, egress) | ✅ Done | 1–6 |
+| React frontend (login, register, marketplace, dashboard, leases, admin) | ✅ Done | 1–6 |
+| 73/73 unit tests passing | ✅ Done | 1–6 |
 
-### 🚧 Coming Soon (Planned Phases 6–10)
+### 🚧 Coming Soon (Planned Phases 7–10)
 
 | Feature | Phase | Why |
 |---|---|---|
-| WireGuard VPN egress for VM traffic | Phase 6 | Protect lenders' IPs from DMCA or abuse by routing VM internet through exit gateway |
 | AI-powered workload matchmaking | Phase 7 | Match borrower requests to the most reliable/compatible node using ML |
 | Anomaly detection (cryptomining, port scanning) | Phase 7 | Automatically terminate rogue sandboxes |
 | Persistent home directory snapshots (MinIO/S3) | Phase 8 | Allow borrowers to retain `/home` data across leases |
 | Compute credits and billing | Phase 9 | Fair credit exchange and Stripe payouts for lenders |
 | Kubernetes deployment + Helm charts | Phase 10 | Production high-availability clustering |
-| GitHub Actions CI/CD pipeline | Phase 10 | Automated test + build + deploy on push |
-| OpenTelemetry distributed tracing | Phase 10 | Full observability across server and agents |
 | GitHub Actions CI/CD pipeline | Phase 10 | Automated test + build + deploy on push |
 | OpenTelemetry distributed tracing | Phase 10 | Full observability across server and agents |
 

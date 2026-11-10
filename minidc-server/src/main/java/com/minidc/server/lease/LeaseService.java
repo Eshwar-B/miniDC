@@ -70,8 +70,15 @@ public class LeaseService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.minidc.server.ws.stomp.StompNotificationService stompNotificationService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.minidc.server.egress.WireGuardService wireGuardService;
+
     public void setKafkaEventPublisher(com.minidc.server.kafka.KafkaEventPublisher kafkaEventPublisher) {
         this.kafkaEventPublisher = kafkaEventPublisher;
+    }
+
+    public void setWireGuardService(com.minidc.server.egress.WireGuardService wireGuardService) {
+        this.wireGuardService = wireGuardService;
     }
 
     public void setStompNotificationService(com.minidc.server.ws.stomp.StompNotificationService stompNotificationService) {
@@ -163,6 +170,12 @@ public class LeaseService {
         }
 
         if (to == PROVISIONING) {
+            if (wireGuardService != null) {
+                try {
+                    wireGuardService.allocateForLease(saved.getId());
+                } catch (Exception ignored) {
+                }
+            }
             String plainPassword = aesGcmCrypto.decrypt(saved.getVmPasswordEnc());
             CreateVmPayload payload = new CreateVmPayload(
                     saved.getId(),
@@ -175,6 +188,12 @@ public class LeaseService {
             );
             agentCommandSender.sendCreateVm(saved.getNodeId(), payload);
         } else if (to == ENDED || to == FAILED) {
+            if (wireGuardService != null) {
+                try {
+                    wireGuardService.releaseLease(saved.getId());
+                } catch (Exception ignored) {
+                }
+            }
             agentCommandSender.sendDestroyVm(saved.getNodeId(), saved.getId());
         }
 

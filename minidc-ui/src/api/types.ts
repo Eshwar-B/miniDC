@@ -151,3 +151,28 @@ export interface TelemetryMetric {
   timestamp: string;
 }
 
+export interface EgressPolicy {
+  blockLan: boolean;
+  privateSubnets: string[];
+  blockedPorts: number[];
+  wireguardEnabled: boolean;
+  exitGatewayEndpoint: string;
+}
+
+export interface EgressStatus {
+  enabled: boolean;
+  gatewayEndpoint: string;
+  gatewayPublicKey: string;
+  activePeers: number;
+  zeroTrustLanIsolation: boolean;
+  blockedPorts: number[];
+  isolatedSubnets: string[];
+}
+
+export interface TrafficVerificationResult {
+  allowed: boolean;
+  targetIp: string;
+  targetPort: number;
+  reason: string;
+}
+

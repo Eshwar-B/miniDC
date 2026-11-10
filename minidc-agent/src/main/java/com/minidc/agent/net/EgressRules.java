@@ -33,14 +33,42 @@ public class EgressRules {
         return List.of(
                 "nft add table inet minidc",
                 "nft add chain inet minidc fwd '{ type filter hook forward priority 0; policy accept; }'",
-                "nft add rule inet minidc fwd iifname \"virbr-minidc\" ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } drop",
+                "nft add rule inet minidc fwd iifname \"virbr-minidc\" ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16 } drop",
                 "nft add rule inet minidc fwd iifname \"virbr-minidc\" tcp dport { 25, 465, 587, 22 } drop",
                 "nft add rule inet minidc fwd iifname \"virbr-minidc\" oifname \"virbr-minidc\" drop"
         );
     }
 
+    public List<String> getLinuxIptablesCommands() {
+        return List.of(
+                "iptables -I FORWARD -i virbr-minidc -d 10.0.0.0/8 -j DROP",
+                "iptables -I FORWARD -i virbr-minidc -d 172.16.0.0/12 -j DROP",
+                "iptables -I FORWARD -i virbr-minidc -d 192.168.0.0/16 -j DROP",
+                "iptables -I FORWARD -i virbr-minidc -d 169.254.0.0/16 -j DROP",
+                "iptables -I FORWARD -i virbr-minidc -p tcp -m multiport --dports 25,465,587,22 -j DROP"
+        );
+    }
+
+    public List<String> getLinuxTeardownCommands() {
+        return List.of(
+                "nft delete table inet minidc 2>/dev/null || true"
+        );
+    }
+
     public String getWindowsBlockLanCommand() {
-        return "New-NetFirewallRule -DisplayName \"minidc-block-lan\" -Direction Outbound -Action Block -Program \"C:\\Program Files\\Oracle\\VirtualBox\\VBoxHeadless.exe\" -RemoteAddress 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16";
+        return "New-NetFirewallRule -DisplayName \"minidc-block-lan\" -Direction Outbound -Action Block -Program \"C:\\Program Files\\Oracle\\VirtualBox\\VBoxHeadless.exe\" -RemoteAddress 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16";
+    }
+
+    public String getWindowsBlockAbusePortsCommand() {
+        return "New-NetFirewallRule -DisplayName \"minidc-block-smtp-ssh\" -Direction Outbound -Action Block -Program \"C:\\Program Files\\Oracle\\VirtualBox\\VBoxHeadless.exe\" -Protocol TCP -RemotePort 25,465,587,22";
+    }
+
+    public List<String> getWindowsTeardownCommands() {
+        return List.of(
+                "Remove-NetFirewallRule -DisplayName \"minidc-block-lan\" -ErrorAction SilentlyContinue",
+                "Remove-NetFirewallRule -DisplayName \"minidc-block-smtp-ssh\" -ErrorAction SilentlyContinue",
+                "Remove-NetFirewallRule -DisplayName \"minidc-in-*\" -ErrorAction SilentlyContinue"
+        );
     }
 
     public String getWindowsAllowInboundCommand(UUID leaseId, int hostPort, String serverIp) {
@@ -69,10 +97,34 @@ public class EgressRules {
                 log.info("Applied Linux nftables egress isolation rules");
             } else if (osDetector.isWindows()) {
                 shell.run(List.of("powershell", "-NoProfile", "-Command", getWindowsBlockLanCommand()), Duration.ofSeconds(5));
-                log.info("Applied Windows Defender Firewall outbound LAN block rule");
+                shell.run(List.of("powershell", "-NoProfile", "-Command", getWindowsBlockAbusePortsCommand()), Duration.ofSeconds(5));
+                log.info("Applied Windows Defender Firewall outbound LAN block & anti-abuse port rules");
             }
         } catch (Exception e) {
             log.warn("Could not apply global egress rules: {}", e.getMessage());
+        }
+    }
+
+    public void removeGlobalEgressRules() {
+        if (properties.dryRun()) {
+            log.info("Dry-run: skipping global egress firewall teardown");
+            return;
+        }
+
+        try {
+            if (osDetector.isLinux()) {
+                for (String cmd : getLinuxTeardownCommands()) {
+                    shell.run(List.of("sh", "-c", cmd), Duration.ofSeconds(5));
+                }
+                log.info("Tore down Linux nftables egress isolation rules");
+            } else if (osDetector.isWindows()) {
+                for (String cmd : getWindowsTeardownCommands()) {
+                    shell.run(List.of("powershell", "-NoProfile", "-Command", cmd), Duration.ofSeconds(5));
+                }
+                log.info("Tore down Windows Defender Firewall egress rules");
+            }
+        } catch (Exception e) {
+            log.warn("Could not tear down global egress rules: {}", e.getMessage());
         }
     }
 

@@ -34,8 +34,8 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **COMPLETED** ✅ | 40 / 40 Passed | Committed & pushed as `phase 3 completed` |
 | **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **COMPLETED** ✅ | 51 / 51 Passed | Committed & pushed as `phase 4 completed` |
 | **Phase 5** | **Real-Time Frontend & Interactive Observability** | **COMPLETED** ✅ | 53 / 53 Passed | Committed & pushed as `phase 5 completed` |
-| **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **COMPLETED** ✅ | 73 / 73 Passed | Committed & pushed as `phase 6 completed` |
+| **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 9** | **Marketplace Economics, Credits & Monetization** | **PLANNED** ⏳ | Pending | Pending |
 | **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **PLANNED** ⏳ | Pending | Pending |
@@ -161,10 +161,45 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 8. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+## 8. Completed: Phase 6 (Zero-Trust Network Isolation & WireGuard Egress)
 
-* **Phase 6 (Zero-Trust Network Isolation & WireGuard Egress):**
-  * *Why:* Protect lender residential IPs from guest abuse or DMCA notices by funneling all guest internet traffic through a centralized WireGuard exit gateway, and dropping local LAN access.
+### 8.1 Objectives & Features Completed
+* **Zero-Trust Network Isolation Engine (`EgressRules.java`, `ZeroTrustPolicyService.java`)**:
+  * Blocks all guest sandboxes from accessing private RFC 1918 host LAN subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `127.0.0.0/8`).
+  * Prevents guests from probing local routers, NAS servers, or smart home devices.
+  * Blocks abusive outbound ports to prevent botnet and spam activity: SMTP (`25`, `465`, `587`) and unauthorized outbound SSH scanning (`22`).
+  * Cross-platform firewall rule generation:
+    * Linux `nftables` with forward filter chain and drop rules.
+    * Linux `iptables` fallback for legacy distributions.
+    * Windows Defender Firewall PowerShell rules targeting `VBoxHeadless.exe` and `VirtualBoxVM.exe`.
+* **WireGuard Cryptography & Client Configuration Generator (`WireGuardCrypto.java`)**:
+  * Implements Curve25519 / X25519 raw 32-byte keypair generation (RFC 7748) with standard Base64 encoding.
+  * Generates standard `wg0.conf` client configurations with persistent keepalive and DNS enforcement.
+  * Generates server-side `[Peer]` blocks for exit gateway route propagation.
+* **WireGuard IP Pool & Exit Gateway Manager (`WireGuardService.java`)**:
+  * Thread-safe subnet allocator managing `10.44.0.0/24` (`10.44.0.2` to `10.44.0.254`).
+  * Automatically assigns a unique tunnel IP and peer configuration when a sandbox lease transitions to `PROVISIONING` or `ACTIVE`.
+  * Safely releases assigned tunnel IPs when the lease transitions to `ENDED` or `FAILED`.
+* **Egress REST API (`EgressGatewayController.java`)**:
+  * `GET /api/egress/policy`: Returns the active platform zero-trust firewall policy.
+  * `GET /api/egress/status`: Returns gateway endpoint, active peers, and subnet isolation parameters.
+  * `POST /api/egress/verify`: Real-time traffic simulator verifying whether an IP and port are allowed or dropped.
+  * `POST /api/egress/nodes/{nodeId}/allocate`: Dynamic WireGuard peer provisioning for edge nodes.
+* **Edge Agent WireGuard & Egress Automation (`WireGuardTunnelManager.java`, `CommandDispatcher.java`)**:
+  * Agent manages tunnel lifecycle via `wg-quick` (Linux) / WireGuard CLI (Windows) with resilient dry-run emulation.
+  * Applies per-lease inbound firewall allow rules during `CREATE_VM` and removes them during `DESTROY_VM`.
+  * Handles `EGRESS_CONFIG` WebSocket instruction to dynamically activate WireGuard tunnels.
+* **Frontend UI Enhancements (`minidc-ui`)**:
+  * `LenderDashboard`: Added Zero-Trust Host & LAN Protection badge guaranteeing lender network safety.
+  * `AdminPage`: Added WireGuard Gateway status display and interactive Zero-Trust Policy Simulator.
+* **Test Verification**:
+  * Added 20 new automated unit and integration tests across server and agent (`WireGuardCryptoTest`, `ZeroTrustPolicyServiceTest`, `WireGuardServiceTest`, `EgressGatewayControllerTest`, `EgressRulesTest`, `WireGuardTunnelManagerTest`, `CommandDispatcherTest`).
+  * Total automated test count increased to **73 / 73 passing tests (100% success)**.
+
+---
+
+## 9. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+
 * **Phase 7 (AI Matchmaking & Anomaly Detection):**
   * *Why:* Match workloads based on predicted node reliability and automatically shut down rogue sandboxes attempting cryptomining or port scanning.
 * **Phase 8 (Persistent Storage Volumes):**
@@ -176,13 +211,14 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 9. Verification & Test Metrics Log
+## 10. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
 * **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
 * **Phase 3 Tests:** 40 passing tests (including Redis state presence, rate limiting filter, token blacklisting, and distributed locks).
 * **Phase 4 Tests:** 51 passing tests (including Kafka event bus, telemetry sliding-window buffer, and autonomous hypervisor reconciler).
 * **Phase 5 Tests:** 53 passing tests (including STOMP WebSocket notification dispatcher and JWT channel security interceptor).
+* **Phase 6 Tests:** 73 passing tests (including X25519 WireGuard crypto, zero-trust IP/port policy enforcement, WireGuard IP pool allocator, and firewall manager).
 * **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
   1. Actuator Health (`/actuator/health`) -> `UP`
   2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`

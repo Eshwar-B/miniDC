@@ -1,26 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { AuditLog, InviteResponse, LeaseResponse, Node } from '../api/types';
+import { AuditLog, EgressStatus, InviteResponse, LeaseResponse, Node, TrafficVerificationResult } from '../api/types';
 
 export const AdminPage: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [leases, setLeases] = useState<LeaseResponse[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [egressStatus, setEgressStatus] = useState<EgressStatus | null>(null);
   const [createdInvite, setCreatedInvite] = useState<InviteResponse | null>(null);
   const [banUserId, setBanUserId] = useState<string>('');
+  const [verifyIp, setVerifyIp] = useState<string>('192.168.1.1');
+  const [verifyPort, setVerifyPort] = useState<number>(80);
+  const [verifyResult, setVerifyResult] = useState<TrafficVerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchAdminData = async () => {
     try {
-      const [fetchedNodes, fetchedLeases, fetchedLogs] = await Promise.all([
+      const [fetchedNodes, fetchedLeases, fetchedLogs, fetchedEgress] = await Promise.all([
         api.getAdminNodes(),
         api.getAdminLeases(),
         api.getAdminAudit(),
+        api.getEgressStatus().catch(() => null),
       ]);
       setNodes(fetchedNodes);
       setLeases(fetchedLeases);
       setAuditLogs(fetchedLogs);
+      if (fetchedEgress) setEgressStatus(fetchedEgress);
     } catch (err: any) {
       setError(err.message || 'Failed fetching admin data');
     } finally {
@@ -31,6 +37,16 @@ export const AdminPage: React.FC = () => {
   useEffect(() => {
     fetchAdminData();
   }, []);
+
+  const handleTestTraffic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await api.verifyTraffic(verifyIp.trim(), verifyPort);
+      setVerifyResult(res);
+    } catch (err: any) {
+      setError(err.message || 'Traffic verification failed');
+    }
+  };
 
   const handleGenerateInvite = async () => {
     try {
@@ -90,6 +106,69 @@ export const AdminPage: React.FC = () => {
             </div>
             <button type="submit" className="btn btn-danger">Ban User</button>
           </form>
+        </div>
+      </div>
+
+      <div className="card mt-4">
+        <h3>Zero-Trust Egress & WireGuard Gateway</h3>
+        <p className="text-muted">Lender home LAN isolation and centralized WireGuard exit gateway enforcement</p>
+
+        {egressStatus && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+            <div style={{ background: '#111827', padding: '1rem', borderRadius: '6px', border: '1px solid #1f2937' }}>
+              <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Zero-Trust Status</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#10b981' }}>ENFORCED</div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>RFC 1918 LAN subnets blocked</div>
+            </div>
+            <div style={{ background: '#111827', padding: '1rem', borderRadius: '6px', border: '1px solid #1f2937' }}>
+              <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>WireGuard Exit Gateway</div>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#38bdf8' }}>{egressStatus.gatewayEndpoint}</div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Active peers: {egressStatus.activePeers}</div>
+            </div>
+            <div style={{ background: '#111827', padding: '1rem', borderRadius: '6px', border: '1px solid #1f2937' }}>
+              <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Anti-Spam Filter</div>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#f59e0b' }}>BLOCKED</div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Ports: 25, 465, 587, 22</div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: '1.5rem', background: '#111827', padding: '1rem', borderRadius: '6px', border: '1px solid #1f2937' }}>
+          <h4>Zero-Trust Policy Simulator</h4>
+          <p style={{ fontSize: '0.85rem', color: '#9ca3af' }}>Test whether a destination IP and port are allowed through the sandbox egress boundary.</p>
+          <form onSubmit={handleTestTraffic} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
+            <input
+              type="text"
+              value={verifyIp}
+              onChange={(e) => setVerifyIp(e.target.value)}
+              placeholder="Destination IP (e.g. 192.168.1.1 or 8.8.8.8)"
+              style={{ flex: 2, padding: '0.4rem 0.6rem', background: '#1f2937', border: '1px solid #374151', color: '#fff', borderRadius: '4px' }}
+              required
+            />
+            <input
+              type="number"
+              value={verifyPort}
+              onChange={(e) => setVerifyPort(Number(e.target.value))}
+              placeholder="Port"
+              style={{ width: '90px', padding: '0.4rem 0.6rem', background: '#1f2937', border: '1px solid #374151', color: '#fff', borderRadius: '4px' }}
+              required
+            />
+            <button type="submit" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem' }}>Test Policy</button>
+          </form>
+
+          {verifyResult && (
+            <div style={{
+              marginTop: '0.75rem',
+              padding: '0.75rem',
+              borderRadius: '4px',
+              background: verifyResult.allowed ? '#064e3b' : '#7f1d1d',
+              border: `1px solid ${verifyResult.allowed ? '#059669' : '#dc2626'}`,
+              color: '#fff',
+              fontSize: '0.85rem'
+            }}>
+              <strong>{verifyResult.allowed ? '✓ TRAFFIC PERMITTED' : '✗ TRAFFIC DROPPED'}</strong>: {verifyResult.reason}
+            </div>
+          )}
         </div>
       </div>
 

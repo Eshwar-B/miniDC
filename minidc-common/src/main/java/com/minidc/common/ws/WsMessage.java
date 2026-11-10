@@ -10,4 +10,7 @@ public record WsMessage(
         String id,
         JsonNode payload
 ) {
+    public WsMessage(MessageType type, JsonNode payload) {
+        this(type, java.util.UUID.randomUUID().toString(), payload);
+    }
 }

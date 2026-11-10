@@ -143,5 +143,18 @@ export const api = {
 
   getAdminAudit: () =>
     request<AuditLog[]>('/api/admin/audit'),
+
+  // Egress & Zero-Trust
+  getEgressPolicy: () =>
+    request<import('./types').EgressPolicy>('/api/egress/policy'),
+
+  getEgressStatus: () =>
+    request<import('./types').EgressStatus>('/api/egress/status'),
+
+  verifyTraffic: (targetIp: string, targetPort: number) =>
+    request<import('./types').TrafficVerificationResult>('/api/egress/verify', {
+      method: 'POST',
+      body: JSON.stringify({ targetIp, targetPort }),
+    }),
 };
 
