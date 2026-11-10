@@ -62,3 +62,4 @@ public class EgressGatewayController {
         return ResponseEntity.ok(config);
     }
 }
+

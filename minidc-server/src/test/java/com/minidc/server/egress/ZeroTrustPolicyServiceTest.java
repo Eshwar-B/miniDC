@@ -73,3 +73,4 @@ class ZeroTrustPolicyServiceTest {
         assertTrue(policy.privateSubnets().contains("192.168.0.0/16"));
     }
 }
+

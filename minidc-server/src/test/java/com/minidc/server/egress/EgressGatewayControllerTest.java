@@ -79,3 +79,4 @@ class EgressGatewayControllerTest {
         assertEquals("10.44.0.2/24", response.getBody().interfaceAddress());
     }
 }
+

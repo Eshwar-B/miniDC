@@ -80,3 +80,4 @@ public final class WireGuardCrypto {
         return String.format("[Peer]\nPublicKey = %s\nAllowedIPs = %s\n", clientPublicKey, clientAddress);
     }
 }
+

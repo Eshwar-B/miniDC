@@ -159,3 +159,4 @@ public class WireGuardService {
         throw new IllegalStateException("WireGuard subnet 10.44.0.0/24 exhausted - no free IP available");
     }
 }
+

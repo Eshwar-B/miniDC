@@ -18,3 +18,4 @@ public record MatchmakingScore(
         return Double.compare(other.score, this.score); // Descending order
     }
 }
+

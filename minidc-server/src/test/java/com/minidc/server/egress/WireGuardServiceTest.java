@@ -70,3 +70,4 @@ class WireGuardServiceTest {
         assertEquals(0, wireGuardService.getActivePeerCount());
     }
 }
+

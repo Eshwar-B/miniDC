@@ -55,3 +55,4 @@ class WireGuardCryptoTest {
         assertTrue(peerBlock.contains("AllowedIPs = 10.44.0.5/32"));
     }
 }
+

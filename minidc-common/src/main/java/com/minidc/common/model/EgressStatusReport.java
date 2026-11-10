@@ -16,3 +16,4 @@ public record EgressStatusReport(
         Instant reportedAt
 ) {
 }
+
