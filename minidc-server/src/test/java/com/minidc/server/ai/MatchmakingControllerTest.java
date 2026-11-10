@@ -72,8 +72,9 @@ class MatchmakingControllerTest {
                 new NodeReliabilityScorer.ReliabilityAssessment(0.92, 92.0, "A", "Solid node")
         );
 
-        var response = controller.getNodeReliability(nodeId);
+        ResponseEntity<NodeReliabilityScorer.ReliabilityAssessment> response = controller.getNodeReliability(nodeId);
         assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody());
         assertEquals("A", response.getBody().grade());
     }
 
@@ -85,8 +86,9 @@ class MatchmakingControllerTest {
         );
         when(abuseDetectionEngine.getRecentAlerts()).thenReturn(List.of(alert));
 
-        var response = controller.getRecentAbuseAlerts();
+        ResponseEntity<List<AbuseAlertEvent>> response = controller.getRecentAbuseAlerts();
         assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
         assertEquals(AbuseType.CRYPTOMINING, response.getBody().get(0).type());
     }

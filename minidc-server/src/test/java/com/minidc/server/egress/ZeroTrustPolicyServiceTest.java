@@ -49,17 +49,17 @@ class ZeroTrustPolicyServiceTest {
     @Test
     void shouldVerifyTrafficPolicyAccurately() {
         // Private LAN should be rejected
-        var privateResult = policyService.verifyTraffic("192.168.1.50", 80);
+        ZeroTrustPolicyService.PolicyVerificationResult privateResult = policyService.verifyTraffic("192.168.1.50", 80);
         assertFalse(privateResult.allowed());
         assertTrue(privateResult.reason().contains("private/local subnet"));
 
         // SMTP port on public IP should be rejected
-        var smtpResult = policyService.verifyTraffic("8.8.8.8", 25);
+        ZeroTrustPolicyService.PolicyVerificationResult smtpResult = policyService.verifyTraffic("8.8.8.8", 25);
         assertFalse(smtpResult.allowed());
         assertTrue(smtpResult.reason().contains("blocked to prevent spam/abuse"));
 
         // Public HTTPS should be allowed
-        var publicResult = policyService.verifyTraffic("8.8.8.8", 443);
+        ZeroTrustPolicyService.PolicyVerificationResult publicResult = policyService.verifyTraffic("8.8.8.8", 443);
         assertTrue(publicResult.allowed());
     }
 

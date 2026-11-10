@@ -21,7 +21,7 @@ class NodeReliabilityScorerTest {
 
     @Test
     void shouldGiveZeroScoreToOfflineOrNullNode() {
-        var nullResult = scorer.assessNode(null);
+        NodeReliabilityScorer.ReliabilityAssessment nullResult = scorer.assessNode(null);
         assertEquals(0.0, nullResult.score());
         assertEquals("F", nullResult.grade());
 
@@ -29,7 +29,7 @@ class NodeReliabilityScorerTest {
         offlineNode.setId(UUID.randomUUID());
         offlineNode.setName("Test-Offline");
         offlineNode.setStatus(NodeStatus.OFFLINE);
-        var offlineResult = scorer.assessNode(offlineNode);
+        NodeReliabilityScorer.ReliabilityAssessment offlineResult = scorer.assessNode(offlineNode);
         assertEquals(0.0, offlineResult.score());
         assertEquals("F", offlineResult.grade());
     }
@@ -44,7 +44,7 @@ class NodeReliabilityScorerTest {
         node.setTotalRamMb(32768);
         node.setTotalCores(16);
 
-        var result = scorer.assessNode(node);
+        NodeReliabilityScorer.ReliabilityAssessment result = scorer.assessNode(node);
         assertTrue(result.score() >= 0.95, "Expected >= 0.95 score for premium online node");
         assertTrue(result.reliabilityPercent() >= 95.0);
         assertEquals("A+", result.grade());
@@ -60,7 +60,7 @@ class NodeReliabilityScorerTest {
         node.setTotalRamMb(4096);
         node.setTotalCores(2);
 
-        var result = scorer.assessNode(node);
+        NodeReliabilityScorer.ReliabilityAssessment result = scorer.assessNode(node);
         assertTrue(result.score() < 0.80, "Expected penalty for stale heartbeat");
     }
 }

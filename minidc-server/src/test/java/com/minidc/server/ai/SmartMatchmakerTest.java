@@ -47,7 +47,7 @@ class SmartMatchmakerTest {
         when(nodeRepository.findById(node1Id)).thenReturn(Optional.of(node1));
 
         // Request 4096 MB RAM
-        var recommendations = matchmaker.recommendOffers(new SmartMatchmaker.MatchRequest(4096, 2, 20, 2));
+        List<SmartMatchmaker.ScoredOfferRecommendation> recommendations = matchmaker.recommendOffers(new SmartMatchmaker.MatchRequest(4096, 2, 20, 2));
         assertTrue(recommendations.isEmpty(), "Under-resourced offer should be filtered out");
     }
 
@@ -75,7 +75,7 @@ class SmartMatchmakerTest {
         when(nodeRepository.findById(node1Id)).thenReturn(Optional.of(node1));
         when(nodeRepository.findById(node2Id)).thenReturn(Optional.of(node2));
 
-        var recommendations = matchmaker.recommendOffers(new SmartMatchmaker.MatchRequest(4096, 2, 20, 2));
+        List<SmartMatchmaker.ScoredOfferRecommendation> recommendations = matchmaker.recommendOffers(new SmartMatchmaker.MatchRequest(4096, 2, 20, 2));
 
         assertEquals(2, recommendations.size());
         assertEquals(autoOffer.getId(), recommendations.get(0).offer().getId(), "Auto-approve offer should be ranked first");

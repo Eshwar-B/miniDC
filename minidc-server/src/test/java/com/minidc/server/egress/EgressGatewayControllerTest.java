@@ -55,12 +55,12 @@ class EgressGatewayControllerTest {
 
     @Test
     void shouldVerifyTrafficThroughPolicyService() {
-        var verification = new ZeroTrustPolicyService.PolicyVerificationResult(
+        ZeroTrustPolicyService.PolicyVerificationResult verification = new ZeroTrustPolicyService.PolicyVerificationResult(
                 false, "192.168.1.1", 80, "Blocked LAN"
         );
         when(policyService.verifyTraffic("192.168.1.1", 80)).thenReturn(verification);
 
-        var response = controller.verifyTraffic(new EgressGatewayController.VerifyRequest("192.168.1.1", 80));
+        ResponseEntity<ZeroTrustPolicyService.PolicyVerificationResult> response = controller.verifyTraffic(new EgressGatewayController.VerifyRequest("192.168.1.1", 80));
         assertEquals(200, response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertFalse(response.getBody().allowed());

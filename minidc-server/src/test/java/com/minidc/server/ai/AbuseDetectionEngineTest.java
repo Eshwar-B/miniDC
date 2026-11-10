@@ -39,15 +39,15 @@ class AbuseDetectionEngineTest {
         UUID nodeId = UUID.randomUUID();
 
         // Sample 1: 98% CPU
-        var alert1 = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 98.0, 1024, 4096, 5, Instant.now()));
+        Optional<AbuseAlertEvent> alert1 = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 98.0, 1024, 4096, 5, Instant.now()));
         assertTrue(alert1.isEmpty(), "Single high sample should not trigger alert");
 
         // Sample 2: 99% CPU
-        var alert2 = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 99.0, 1024, 4096, 5, Instant.now()));
+        Optional<AbuseAlertEvent> alert2 = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 99.0, 1024, 4096, 5, Instant.now()));
         assertTrue(alert2.isEmpty(), "Two high samples should not trigger alert");
 
         // Sample 3: 97% CPU -> Should trigger CRYPTOMINING alert and kill lease
-        var alert3 = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 97.0, 1024, 4096, 5, Instant.now()));
+        Optional<AbuseAlertEvent> alert3 = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 97.0, 1024, 4096, 5, Instant.now()));
         assertTrue(alert3.isPresent(), "Third high sample should trigger alert");
         assertEquals(AbuseType.CRYPTOMINING, alert3.get().type());
         assertTrue(alert3.get().autoTerminated());
@@ -69,7 +69,7 @@ class AbuseDetectionEngineTest {
         engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 40.0, 1024, 4096, 5, Instant.now()));
 
         // Next high sample starts from 1 again, so no alert
-        var alert = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 100.0, 1024, 4096, 5, Instant.now()));
+        Optional<AbuseAlertEvent> alert = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 100.0, 1024, 4096, 5, Instant.now()));
         assertTrue(alert.isEmpty());
         verify(leaseService, never()).kill(any(), any());
     }
@@ -80,7 +80,7 @@ class AbuseDetectionEngineTest {
         UUID nodeId = UUID.randomUUID();
 
         // 99.5% RAM utilization (4080 / 4096)
-        var alert = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 30.0, 4080, 4096, 5, Instant.now()));
+        Optional<AbuseAlertEvent> alert = engine.analyzeMetric(new TelemetryMetricEvent(nodeId, leaseId, 30.0, 4080, 4096, 5, Instant.now()));
         assertTrue(alert.isPresent());
         assertEquals(AbuseType.RESOURCE_EXHAUSTION, alert.get().type());
     }
