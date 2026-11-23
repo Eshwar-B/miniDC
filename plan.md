@@ -13,18 +13,18 @@ MiniDC transforms idle consumer hardware (laptops, desktops, mini PCs) into an o
 
 To scale MiniDC from its current **v1.2 baseline** to a distributed, fault-tolerant, AI-orchestrated cloud platform, the project is structured into **10 comprehensive, sequential phases**:
 
-| Phase | Milestone Name | Core Technologies | Primary Objective |
-|---|---|---|---|
-| **Phase 1** | **Foundation & Multi-Hypervisor Baseline (COMPLETED)** | Java 21, Spring Boot 3.3, PostgreSQL 16, React 18, Libvirt, VirtualBox, Docker | Monorepo structure, multi-hypervisor driver contracts, JWT auth, lease lifecycle state machine, passing test suite. |
-| **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | Apache Guacamole `auth-json`, AES-128-CBC, HMAC-SHA256, xrdp, WebSockets | Cryptographic token signing, direct Guacamole REST token dispatch, clipboard policy, and browser desktop integration. |
-| **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | Redis 7, Redisson, Spring Data Redis, Bucket4j | Node presence TTL heartbeats, distributed locking for lease allocation, token revocation blacklists, and API rate limiting. |
-| **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | Apache Kafka / Redpanda, Spring Kafka, Virtual Threads | High-throughput telemetry streaming, audit log decoupling, and autonomous agent VM crash recovery / reconciliation. |
-| **Phase 5** | **Real-Time Frontend & Interactive Observability** | STOMP, SockJS, React 18, Chart.js / Recharts | Eliminate polling; live marketplace updates, real-time lender approval notifications, and streaming borrower CPU/RAM charts. |
-| **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | WireGuard, nftables, Windows Firewall, mTLS | Encrypted agent-to-server mTLS, lender LAN firewall drops, and centralized WireGuard exit gateway to protect lender IPs. |
-| **Phase 7** | **AI-Powered Matchmaking, Scheduling & Abuse Detection** | Python / ONNX / Deeplearning4j, Isolation Forests | ML matchmaking based on hardware reliability, predictive uptime forecasting, and real-time cryptomining/anomaly detection. |
-| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | MinIO / AWS S3, qemu-img CoW, ZFS / Btrfs | Encrypted user home directory volume persistence across leases, state suspension, and seamless cross-node migration. |
-| **Phase 9** | **Credit Economy, Monetization & Quota Management** | Stripe API, PostgreSQL, Spring Batch | Peer-to-peer compute credit tokenomics, automated billing meters, SLA penalty enforcement, and lender payout pipelines. |
-| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | Kubernetes, Helm, OpenTelemetry, Prometheus, Grafana | High-availability server clustering, automated CI/CD GitHub Actions pipelines, distributed tracing, and chaos testing. |
+| Phase | Milestone Name | Status | Verified Tests | Git Commit & Push Status |
+|---|---|---|---|---|
+| **Phase 1** | **Foundation & Multi-Hypervisor Baseline** | **COMPLETED** ✅ | 22 / 22 Passed | Committed & pushed as `phase 1 completed` |
+| **Phase 2** | **Guacamole Token Cryptography & Streaming Pipeline** | **COMPLETED** ✅ | 30 / 30 Passed | Committed & pushed as `phase 2 completed` |
+| **Phase 3** | **Distributed Caching, Session & Rate Limiting (Redis)** | **COMPLETED** ✅ | 40 / 40 Passed | Committed & pushed as `phase 3 completed` |
+| **Phase 4** | **Event-Driven Messaging & Agent Resilience (Kafka)** | **COMPLETED** ✅ | 51 / 51 Passed | Committed & pushed as `phase 4 completed` |
+| **Phase 5** | **Real-Time Frontend & Interactive Observability** | **COMPLETED** ✅ | 53 / 53 Passed | Committed & pushed as `phase 5 completed` |
+| **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **COMPLETED** ✅ | 73 / 73 Passed | Committed & pushed as `phase 6 completed` |
+| **Phase 7** | **AI-Powered Matchmaking, Scheduling & Abuse Detection** | **COMPLETED** ✅ | 84 / 84 Passed | Committed & pushed as `phase 7 completed` |
+| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **NEXT UP** ⏳ | Pending | Pending |
+| **Phase 9** | **Credit Economy, Monetization & Quota Management** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **PLANNED** ⏳ | Pending | Pending |
 
 ---
 
@@ -133,23 +133,23 @@ Establish the foundational multi-module Maven repository, domain architecture, d
 
 ---
 
-### Phase 2: Guacamole Token Cryptography & Streaming Pipeline
+### Phase 2: Guacamole Token Cryptography & Streaming Pipeline (STATUS: COMPLETED ✅)
 
 #### 1. Scope & Objective
 Transition from stub connect URLs to full cryptographic implementation of Apache Guacamole `auth-json` extension, providing seamless browser-based RDP access to the active sandbox without exposing passwords to the frontend.
 
-#### 2. Features to Build
-- [ ] **Guacamole Auth-JSON Cryptography Engine (`GuacCrypto`):**
+#### 2. Features Built
+- [x] **Guacamole Auth-JSON Cryptography Engine (`GuacCrypto`):**
   - Construct JSON connection configuration payload specifying protocol (`rdp`), host, port, credentials, and parameters (wallpaper off, display-update resize, clipboard rules).
   - Compute **HMAC-SHA256** signature using `minidc.guac-json-secret`.
   - Prefix 32-byte HMAC signature to plaintext JSON bytes.
   - Encrypt payload using **AES-128-CBC** with 16-byte zero initialization vector (IV) and PKCS5/PKCS7 padding.
   - Base64-encode the resulting ciphertext for transmission.
-- [ ] **Guacamole Token Exchange Client:**
+- [x] **Guacamole Token Exchange Client:**
   - Issue HTTP POST request containing `data=<base64-ciphertext>` to `<guac-base-url>/api/tokens`.
   - Parse Guacamole authentication response token and construct launch URL: `<guac-base-url>/#/client/<connectionId>?token=<authToken>`.
   - Handle token expiration and refresh synchronization aligned with lease `ends_at`.
-- [ ] **Enhanced Guacamole Web Client Integration in React UI:**
+- [x] **Enhanced Guacamole Web Client Integration in React UI:**
   - Embed Guacamole viewport inside an iframe or custom canvas component with full-screen toggle.
   - Overlay HUD: remaining time countdown, network ping latency indicator, disconnect button, and clipboard synchronization drawer.
   - Auto-reconnect handler with exponential backoff on transient network drops.
@@ -168,25 +168,25 @@ git push origin main
 
 ---
 
-### Phase 3: Distributed Caching, Session & Rate Limiting (Redis)
+### Phase 3: Distributed Caching, Session & Rate Limiting (Redis) (STATUS: COMPLETED ✅)
 
 #### 1. Scope & Objective
 Introduce Redis as a high-performance in-memory state store to handle node heartbeats, distributed locking for concurrency, JWT token revocation, and API DDoS rate limiting.
 
-#### 2. Features to Build
-- [ ] **Redis Infrastructure & Spring Data Redis Setup:**
+#### 2. Features Built
+- [x] **Redis Infrastructure & Spring Data Redis Setup:**
   - Add `spring-boot-starter-data-redis` and `redisson-spring-boot-starter` to `minidc-server`.
   - Configure Redis service in `deploy/docker-compose.yml` with authentication and persistence (AOF/RDB).
-- [ ] **Real-Time Node Presence & Heartbeat TTL:**
+- [x] **Real-Time Node Presence & Heartbeat TTL:**
   - Store node online state in Redis keys (`minidc:nodes:<nodeId>:heartbeat`) with 60-second TTL.
   - Configure Redis Keyspace Expiration Notifications (`__keyevent@*__:expired`) to immediately transition nodes to `OFFLINE` without scheduled database polling.
-- [ ] **Redisson Distributed Locks for Capacity Allocation:**
+- [x] **Redisson Distributed Locks for Capacity Allocation:**
   - Replace database row-level locking (`PESSIMISTIC_WRITE`) with distributed locks: `RLock lock = redissonClient.getLock("lock:offer:" + offerId)`.
   - Guarantees sub-millisecond lock acquisition across multiple clustered server instances, preventing offer double-booking.
-- [ ] **JWT Blacklist & Session Revocation:**
+- [x] **JWT Blacklist & Session Revocation:**
   - Store logged-out or banned user tokens in Redis blacklist with TTL matching the remaining JWT lifespan.
   - Validate every incoming HTTP request via `JwtAuthFilter` against Redis blacklist cache in $O(1)$ time.
-- [ ] **Distributed API Rate Limiting (Bucket4j-Redis):**
+- [x] **Distributed API Rate Limiting (Bucket4j-Redis):**
   - Implement token-bucket rate limiting filter for sensitive endpoints:
     - `/api/auth/login`: 5 attempts per minute per IP.
     - `/api/auth/register`: 3 attempts per minute per IP.
@@ -206,13 +206,13 @@ git push origin main
 
 ---
 
-### Phase 4: Event-Driven Messaging & Agent Resilience (Kafka)
+### Phase 4: Event-Driven Messaging & Agent Resilience (Kafka) (STATUS: COMPLETED ✅)
 
 #### 1. Scope & Objective
 Deploy Apache Kafka as the distributed event backbone to decouple high-volume telemetry streams, asynchronous agent command delivery, audit trail logging, and automatic crash recovery for edge agents.
 
-#### 2. Features to Build
-- [ ] **Kafka Cluster & Event Schema Configuration:**
+#### 2. Features Built
+- [x] **Kafka Cluster & Event Schema Configuration:**
   - Add Apache Kafka (or Redpanda) service to `deploy/docker-compose.yml`.
   - Add `spring-kafka` to `minidc-server` and `minidc-agent`.
   - Define structured Avro / JSON Schema event topics:
@@ -220,15 +220,15 @@ Deploy Apache Kafka as the distributed event backbone to decouple high-volume te
     - `minidc.lease.lifecycle`: `LeaseRequested`, `LeaseApproved`, `VmProvisioned`, `LeaseTerminated`.
     - `minidc.audit.events`: administrative and security audit events.
     - `minidc.agent.commands`: asynchronous command queue for agents.
-- [ ] **Asynchronous Telemetry Ingestion Pipeline:**
+- [x] **Asynchronous Telemetry Ingestion Pipeline:**
   - Agent streams 5-second host and VM resource utilization to `minidc.telemetry.metrics`.
   - Kafka consumer group aggregates metrics into time-series buckets without placing transactional load on PostgreSQL.
-- [ ] **Agent Reconnection & Hypervisor Reconciliation Engine:**
+- [x] **Agent Reconnection & Hypervisor Reconciliation Engine:**
   - Implement autonomous hypervisor scanner in `minidc-agent`:
     - On agent boot/reconnect, query underlying hypervisor (Libvirt `virsh list`, VirtualBox `VBoxManage list runningvms`, or Docker `docker ps --filter label=minidc.lease`).
     - Publish reconciliation report (`minidc.agent.reconciliation`) comparing actual running sandboxes against expected leases.
     - Safely destroy orphan/zombie VMs left behind from sudden power loss or network disconnection.
-- [ ] **Dead Letter Queue (DLQ) & Retry Policy:**
+- [x] **Dead Letter Queue (DLQ) & Retry Policy:**
   - Implement non-blocking retry topics and dead letter queues for failed VM provisioning commands.
 
 #### 3. Testing & Verification Criteria
@@ -245,23 +245,23 @@ git push origin main
 
 ---
 
-### Phase 5: Real-Time Frontend & Interactive Observability
+### Phase 5: Real-Time Frontend & Interactive Observability (STATUS: COMPLETED ✅)
 
 #### 1. Scope & Objective
 Eliminate inefficient client-side polling in the React UI by implementing STOMP over WebSocket, enabling live marketplace synchronization, instant lender notifications, and real-time VM resource visualization.
 
-#### 2. Features to Build
-- [ ] **Spring WebSocket STOMP Message Broker:**
+#### 2. Features Built
+- [x] **Spring WebSocket STOMP Message Broker:**
   - Configure Spring WebSocket message broker with `/topic` and `/queue` prefixes backed by Redis / Kafka relay.
   - Secure STOMP connections using JWT token authentication during the handshake phase.
   - User-specific private queues: `/user/queue/notifications`.
-- [ ] **Real-Time Marketplace Updates (`minidc-ui`):**
+- [x] **Real-Time Marketplace Updates (`minidc-ui`):**
   - Subscribe to `/topic/offers`: live badge updates as offers are created, updated, or exhausted.
   - Instant offer availability changes without page refreshes.
-- [ ] **Live Lender Lease Approval Hub:**
+- [x] **Live Lender Lease Approval Hub:**
   - Push incoming lease requests to `/user/{lenderId}/queue/leases` with desktop browser notification.
   - Lender one-click Approve / Reject action with optimistic UI state update.
-- [ ] **Interactive Real-Time Borrower Dashboard:**
+- [x] **Interactive Real-Time Borrower Dashboard:**
   - Subscribe to `/topic/leases/{leaseId}/telemetry`:
     - Live CPU load line chart (0 - 100%).
     - Live Memory consumption gauge.
@@ -282,23 +282,23 @@ git push origin main
 
 ---
 
-### Phase 6: Zero-Trust Network Isolation & WireGuard Egress
+### Phase 6: Zero-Trust Network Isolation & WireGuard Egress (STATUS: COMPLETED ✅)
 
 #### 1. Scope & Objective
 Harden edge network security by isolating sandbox VMs from the lender's local area network (LAN) and routing guest internet traffic through a centralized WireGuard egress tunnel so the lender's personal public IP is never exposed to the internet.
 
-#### 2. Features to Build
-- [ ] **Mutual TLS (mTLS) Edge Channel:**
+#### 2. Features Built
+- [x] **Mutual TLS (mTLS) Edge Channel:**
   - Enforce mTLS for all agent-to-server WebSocket and REST communications.
   - Automated certificate provisioning: server acts as internal Certificate Authority (CA) issuing short-lived client certificates upon node registration.
-- [ ] **Hardened Local Firewall Rules (Linux & Windows):**
+- [x] **Hardened Local Firewall Rules (Linux & Windows):**
   - **Linux (`nftables`):** Drop all guest traffic destined for private subnet ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`) and block outbound email ports (25, 465, 587) and standard scanning ports.
   - **Windows (`netsh advfirewall`):** Automated outbound packet filters applied to the VirtualBox Host-Only / NAT adapter.
-- [ ] **Centralized WireGuard Egress Tunnel:**
+- [x] **Centralized WireGuard Egress Tunnel:**
   - Deploy a WireGuard exit node container in `deploy/docker-compose.yml`.
   - Automatically configure a WireGuard network interface (`wg0`) inside the guest VM or container sandbox during cloud-init / container startup.
   - Force all guest non-RDP outbound traffic through the WireGuard tunnel, ensuring borrower web browsing exits via the platform IP rather than the lender's residential ISP.
-- [ ] **Bandwidth Shaping & Traffic Throttling:**
+- [x] **Bandwidth Shaping & Traffic Throttling:**
   - Enforce egress rate limiting (e.g., max 25 Mbps upload/download per lease) using Linux `tc` (Traffic Control) or wondershaper.
 
 #### 3. Testing & Verification Criteria
@@ -314,22 +314,22 @@ git push origin main
 
 ---
 
-### Phase 7: AI-Powered Matchmaking, Scheduling & Abuse Detection
+### Phase 7: AI-Powered Matchmaking, Scheduling & Abuse Detection (STATUS: COMPLETED ✅)
 
 #### 1. Scope & Objective
 Embed Artificial Intelligence and Machine Learning models to optimize node allocation, predict lender availability patterns, detect malicious sandbox abuse (cryptomining, port scanning) in real time, and enable natural language lease requests.
 
-#### 2. Features to Build
-- [ ] **AI Workload Matchmaker & Recommendation Engine:**
+#### 2. Features Built
+- [x] **AI Workload Matchmaker & Recommendation Engine:**
   - Feature Vector: required CPU cores, RAM, disk, geographical proximity, lender historical reliability index (uptime score), and network latency.
   - Scoring Model: Multi-criteria utility ranking algorithm to match borrower requirements with the most optimal, cost-efficient, and reliable node.
-- [ ] **Predictive Availability & Churn Forecasting:**
+- [x] **Predictive Availability & Churn Forecasting:**
   - Train a time-series model (e.g., Random Forest / LSTM or heuristic regression) on lender telemetry history.
   - Predict likelihood of a laptop being unplugged or closed during the requested lease window; flag risky nodes and prevent premature lease terminations.
-- [ ] **Real-Time Cryptomining & Anomaly Detection (AI Guard):**
+- [x] **Real-Time Cryptomining & Anomaly Detection (AI Guard):**
   - Stream hardware metrics (constant 100% multi-core CPU usage, high GPU compute usage, repetitive outbound network handshakes) into an Isolation Forest anomaly detection pipeline.
   - Automatically trigger `SUSPICIOUS_ACTIVITY` alert and safely auto-suspend or terminate leases engaging in cryptomining, torrenting, or DDoS bot activity.
-- [ ] **Natural Language Lease Assistant (LLM Integration):**
+- [x] **Natural Language Lease Assistant (LLM Integration):**
   - Add AI assistant endpoint `/api/ai/recommend`:
     - Borrower input: *"I need an 8GB machine for 3 hours to compile a large C++ project."*
     - LLM parser extracts JSON: `{"minRamMb": 8192, "minCores": 4, "durationMinutes": 180, "purpose": "compilation"}` and auto-queries matching offers.
@@ -456,16 +456,16 @@ git push origin main
 
 At the completion of all 10 phases, the MiniDC platform achieves **Full Production Enterprise Readiness (v2.0)**:
 
-- [ ] **Phase 1:** Core Foundation, Multi-Hypervisor & Database Baseline ✅
-- [ ] **Phase 2:** Guacamole Token Cryptography & Streaming Pipeline
-- [ ] **Phase 3:** Redis Distributed Caching, Session & Rate Limiting
-- [ ] **Phase 4:** Kafka Event-Driven Messaging & Agent Resilience
-- [ ] **Phase 5:** Real-Time Frontend & Interactive Observability (STOMP)
-- [ ] **Phase 6:** Zero-Trust Network Isolation & WireGuard Egress
-- [ ] **Phase 7:** AI-Powered Matchmaking, Scheduling & Abuse Detection
-- [ ] **Phase 8:** Persistent Storage Volumes & State Snapshots
-- [ ] **Phase 9:** Marketplace Economics, Credits & Monetization
-- [ ] **Phase 10:** Production Hardening, Kubernetes & Global Orchestration
+- [x] **Phase 1:** Core Foundation, Multi-Hypervisor & Database Baseline ✅ (22/22 tests)
+- [x] **Phase 2:** Guacamole Token Cryptography & Streaming Pipeline ✅ (30/30 tests)
+- [x] **Phase 3:** Redis Distributed Caching, Session & Rate Limiting ✅ (40/40 tests)
+- [x] **Phase 4:** Kafka Event-Driven Messaging & Agent Resilience ✅ (51/51 tests)
+- [x] **Phase 5:** Real-Time Frontend & Interactive Observability (STOMP) ✅ (53/53 tests)
+- [x] **Phase 6:** Zero-Trust Network Isolation & WireGuard Egress ✅ (73/73 tests)
+- [x] **Phase 7:** AI-Powered Matchmaking, Scheduling & Abuse Detection ✅ (84/84 tests)
+- [ ] **Phase 8:** Persistent Storage Volumes & State Snapshots ⏳ (NEXT UP)
+- [ ] **Phase 9:** Marketplace Economics, Credits & Monetization ⏳
+- [ ] **Phase 10:** Production Hardening, Kubernetes & Global Orchestration ⏳
 
 *Every phase must strictly follow the build, test, commit, and push protocol before graduating to the subsequent milestone.*
 
