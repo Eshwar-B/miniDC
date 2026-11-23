@@ -786,6 +786,88 @@ Authorization: Bearer <member-token>
 
 ---
 
+### Borrower Feature 7 – Pause and Resume VM Sandbox (Phase 8)
+
+Borrowers can temporarily pause their active VM sandbox to halt compute resource consumption without destroying the environment, and resume it whenever ready.
+
+**Via UI:** My Leases → Click **"Pause"** on an `ACTIVE` lease card → status changes to `PAUSED`. Click **"Resume"** to reactivate.
+
+**Via API:**
+```http
+POST /api/leases/{leaseId}/pause
+Authorization: Bearer <member-token>
+```
+Response:
+```json
+{
+  "id": "lease-uuid",
+  "state": "PAUSED"
+}
+```
+
+To resume:
+```http
+POST /api/leases/{leaseId}/resume
+Authorization: Bearer <member-token>
+```
+Response:
+```json
+{
+  "id": "lease-uuid",
+  "state": "ACTIVE"
+}
+```
+
+Hypervisor drivers execute pause/resume under the hood (`docker pause/unpause`, `VBoxManage controlvm pause/resume`, `virsh suspend/resume`).
+
+---
+
+### Borrower Feature 8 – Persistent Storage Volumes & Snapshots (Phase 8)
+
+Borrowers can create persistent virtual disks to store `/home/borrower` data that persists across distinct lease lifecycles.
+
+**Via UI:** Storage & Wallet → **"Persistent Volumes"** section → Click **"Create Volume"** → Specify name, size (GB), and optional mount path (`/home/borrower`). Attach to an active lease or capture snapshots.
+
+**Create a Volume (API):**
+```http
+POST /api/volumes
+Authorization: Bearer <member-token>
+Content-Type: application/json
+
+{
+  "name": "my-dev-workspace",
+  "sizeGb": 20,
+  "mountPath": "/home/borrower"
+}
+```
+
+**List Volumes:**
+```http
+GET /api/volumes/mine
+Authorization: Bearer <member-token>
+```
+
+**Attach to an Active Lease:**
+```http
+POST /api/volumes/{volumeId}/attach?leaseId={leaseId}
+Authorization: Bearer <member-token>
+```
+
+**Detach from Lease:**
+```http
+POST /api/volumes/{volumeId}/detach
+Authorization: Bearer <member-token>
+```
+
+**Create Encrypted Snapshot:**
+```http
+POST /api/volumes/{volumeId}/snapshots
+Authorization: Bearer <member-token>
+```
+Snapshots compute SHA-256 integrity checksums and archive state deltas to cloud object storage (MinIO/S3), allowing seamless migration and recovery.
+
+---
+
 ## 11. Agent (Edge Node Daemon) – Setup Guide
 
 The agent runs on the **lender's physical machine** and manages VM lifecycle on behalf of the control server.
@@ -920,6 +1002,20 @@ Authorization: Bearer <member-token>
 | `POST` | `/api/leases/{id}/reject` | Reject a lease request |
 | `POST` | `/api/leases/{id}/kill` | Force-terminate an active lease |
 | `POST` | `/api/leases/{id}/end` | Borrower-initiated graceful end |
+| `POST` | `/api/leases/{id}/pause` | Pause active VM sandbox (Phase 8) |
+| `POST` | `/api/leases/{id}/resume` | Resume paused VM sandbox (Phase 8) |
+
+### Persistent Volume Endpoints (MEMBER role, Phase 8)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/volumes` | Create a persistent storage volume |
+| `GET` | `/api/volumes/mine` | List all volumes owned by user |
+| `GET` | `/api/volumes/{id}` | Get volume details |
+| `POST` | `/api/volumes/{id}/attach` | Attach volume to active lease (`?leaseId=`) |
+| `POST` | `/api/volumes/{id}/detach` | Detach volume from lease |
+| `POST` | `/api/volumes/{id}/snapshots` | Create an encrypted volume snapshot |
+| `DELETE` | `/api/volumes/{id}` | Delete persistent volume |
 
 ### Guacamole / Desktop Endpoints (MEMBER role, lease owner)
 
@@ -1041,15 +1137,17 @@ Retry-After: 60
 | Real-time cryptomining heuristic detection (95%+ CPU sustained) | ✅ Done | 7 |
 | Memory runaway / exhaustion abuse detection | ✅ Done | 7 |
 | Automated rogue sandbox quarantine (`leaseService.kill`) | ✅ Done | 7 |
+| Persistent encrypted storage volumes (`/api/volumes`) | ✅ Done | 8 |
+| Encrypted S3/MinIO snapshot synchronization and checksumming | ✅ Done | 8 |
+| Multi-hypervisor VM sandbox pause & resume (`/api/leases/{id}/pause`) | ✅ Done | 8 |
 | Admin panel (invites, banning, audit log, all-nodes, all-leases, egress, abuse alerts) | ✅ Done | 1–7 |
 | React frontend (login, register, marketplace, dashboard, leases, admin) | ✅ Done | 1–7 |
-| 84/84 unit tests passing | ✅ Done | 1–7 |
+| 88/88 unit tests passing | ✅ Done | 1–8 |
 
-### 🚧 Coming Soon (Planned Phases 8–10)
+### 🚧 Coming Soon (Planned Phases 9–10)
 
 | Feature | Phase | Why |
 |---|---|---|
-| Persistent home directory snapshots (MinIO/S3) | Phase 8 | Allow borrowers to retain `/home` data across leases |
 | Compute credits and billing | Phase 9 | Fair credit exchange and Stripe payouts for lenders |
 | Kubernetes deployment + Helm charts | Phase 10 | Production high-availability clustering |
 | GitHub Actions CI/CD pipeline | Phase 10 | Automated test + build + deploy on push |

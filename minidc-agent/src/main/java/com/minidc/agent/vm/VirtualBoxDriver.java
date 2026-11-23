@@ -128,6 +128,30 @@ public class VirtualBoxDriver implements HypervisorDriver {
     }
 
     @Override
+    public void pauseVm(String vmName) {
+        if (properties.dryRun()) {
+            log.info("Dry-run: VirtualBoxDriver pauseVm for {}", vmName);
+            return;
+        }
+        String vbox = getVBoxManagePath();
+        try {
+            shell.run(List.of(vbox, "controlvm", vmName, "pause"), Duration.ofSeconds(15));
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void resumeVm(String vmName) {
+        if (properties.dryRun()) {
+            log.info("Dry-run: VirtualBoxDriver resumeVm for {}", vmName);
+            return;
+        }
+        String vbox = getVBoxManagePath();
+        try {
+            shell.run(List.of(vbox, "controlvm", vmName, "resume"), Duration.ofSeconds(15));
+        } catch (Exception ignored) {}
+    }
+
+    @Override
     public List<String> listVms() {
         if (properties.dryRun()) {
             return List.of();

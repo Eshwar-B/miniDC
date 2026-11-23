@@ -36,8 +36,8 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 5** | **Real-Time Frontend & Interactive Observability** | **COMPLETED** ✅ | 53 / 53 Passed | Committed & pushed as `phase 5 completed` |
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **COMPLETED** ✅ | 73 / 73 Passed | Committed & pushed as `phase 6 completed` |
 | **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **COMPLETED** ✅ | 84 / 84 Passed | Committed & pushed as `phase 7 completed` |
-| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 9** | **Marketplace Economics, Credits & Monetization** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **COMPLETED** ✅ | 88 / 88 Passed | Committed & pushed as `phase 8 completed` |
+| **Phase 9** | **Marketplace Economics, Credits & Monetization** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **PLANNED** ⏳ | Pending | Pending |
 
 ---
@@ -230,10 +230,38 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 10. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+## 10. Completed: Phase 8 (Persistent Storage Volumes & State Snapshots)
 
-* **Phase 8 (Persistent Storage Volumes):**
-  * *Why:* Allow borrowers to retain their `/home` directory across leases through encrypted snapshot syncing to S3/MinIO.
+### 10.1 Objectives & Features Completed
+* **Persistent Encrypted Storage Volumes (`VolumeService.java`, `VolumeStorageService.java`)**:
+  * Added persistent volume entity lifecycle: `AVAILABLE` -> `ATTACHED` -> `SNAPSHOT_SYNCING` -> `DELETED`.
+  * Support for attaching persistent user storage volumes (`/home/borrower`) across independent leases so user work survives lease termination.
+  * SHA-256 snapshot checksumming and simulated S3/MinIO cloud object snapshot archive syncing.
+  * Enforced ownership and mutual exclusion (volume can only attach to one active lease at a time).
+* **Sandbox State Suspension & Resume (`pauseVm` / `resumeVm`)**:
+  * Extended `LeaseState` with `PAUSED`.
+  * Multi-Hypervisor driver implementation:
+    * `DockerDriver`: `docker pause` and `docker unpause`.
+    * `VirtualBoxDriver`: `VBoxManage controlvm <vm> pause` and `resume`.
+    * `LibvirtDriver`: `virsh suspend` and `virsh resume`.
+  * WebSocket command dispatcher routing `PAUSE_VM` and `RESUME_VM` instructions to hypervisors.
+  * Safe state transitions (`ACTIVE` <-> `PAUSED`) with audit logging.
+* **Volume & Lease REST Endpoints (`VolumeController.java`, `LeaseController.java`)**:
+  * `POST /api/volumes`: Provision a new persistent storage volume.
+  * `GET /api/volumes/mine`: List all persistent volumes owned by borrower.
+  * `POST /api/volumes/{id}/attach?leaseId={leaseId}`: Attach volume to an active lease.
+  * `POST /api/volumes/{id}/detach`: Detach volume from lease.
+  * `POST /api/volumes/{id}/snapshots`: Capture an encrypted snapshot of the volume.
+  * `POST /api/leases/{id}/pause`: Pause an active sandbox VM.
+  * `POST /api/leases/{id}/resume`: Resume a paused sandbox VM.
+* **Test Verification**:
+  * Added 4 new automated test suites (`VolumeServiceTest`, `VolumeControllerTest`, updated `DockerDriverTest`, updated `CommandDispatcherTest`, and pause/resume in `LeaseServiceTest` & `LeaseStateMachineTest`).
+  * Phase 8 test count reaches **88 / 88 passing tests (100% success)**.
+
+---
+
+## 11. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+
 * **Phase 9 (Marketplace Economics & Billing):**
   * *Why:* Enable fair compute credit exchange between lenders and borrowers with automated per-minute billing and Stripe payouts.
 * **Phase 10 (Kubernetes & Enterprise Hardening):**
@@ -241,7 +269,7 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 11. Verification & Test Metrics Log
+## 12. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
 * **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
@@ -250,6 +278,7 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 * **Phase 5 Tests:** 53 passing tests (including STOMP WebSocket notification dispatcher and JWT channel security interceptor).
 * **Phase 6 Tests:** 73 passing tests (including X25519 WireGuard crypto, zero-trust IP/port policy enforcement, WireGuard IP pool allocator, and firewall manager).
 * **Phase 7 Tests:** 84 passing tests (including node reliability scoring, intelligent matchmaking, cryptomining anomaly detection, and automated lease quarantine).
+* **Phase 8 Tests:** 88 passing tests (including persistent storage volumes, S3 snapshot syncing, multi-hypervisor VM pause/resume, and volume REST APIs).
 * **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
   1. Actuator Health (`/actuator/health`) -> `UP`
   2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`
@@ -261,5 +290,5 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
   8. Marketplace Browsing & Node Status (`/api/offers/available`, `/api/nodes/mine`) -> `200 OK`
   9. Redis Rate Limiter Brute-Force Defense -> `429 Too Many Requests (Blocked by Redis Filter)`
   10. JWT Token Blacklist & Session Revocation (`/api/auth/logout`) -> `204 No Content`, subsequent calls rejected with `403 Forbidden`
-* **Frontend:** 65 modules cleanly compiled into production bundle (`dist/`).
+* **Frontend:** 66 modules cleanly compiled into production bundle (`dist/`).
 * **Current Git Branch:** `main` (Remote: `https://github.com/Eshwar-B/miniDC.git`)

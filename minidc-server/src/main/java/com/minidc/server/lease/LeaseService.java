@@ -35,6 +35,7 @@ import static com.minidc.common.enums.LeaseState.CANCELLED;
 import static com.minidc.common.enums.LeaseState.ENDED;
 import static com.minidc.common.enums.LeaseState.EXPIRING;
 import static com.minidc.common.enums.LeaseState.FAILED;
+import static com.minidc.common.enums.LeaseState.PAUSED;
 import static com.minidc.common.enums.LeaseState.PROVISIONING;
 import static com.minidc.common.enums.LeaseState.REJECTED;
 import static com.minidc.common.enums.LeaseState.REQUESTED;
@@ -49,7 +50,8 @@ public class LeaseService {
             REQUESTED, Set.of(APPROVED, REJECTED, CANCELLED),
             APPROVED, Set.of(PROVISIONING, CANCELLED),
             PROVISIONING, Set.of(ACTIVE, FAILED),
-            ACTIVE, Set.of(EXPIRING, ENDED),
+            ACTIVE, Set.of(EXPIRING, ENDED, PAUSED),
+            PAUSED, Set.of(ACTIVE, ENDED),
             EXPIRING, Set.of(ENDED)
     );
 
@@ -187,6 +189,10 @@ public class LeaseService {
                     plainPassword
             );
             agentCommandSender.sendCreateVm(saved.getNodeId(), payload);
+        } else if (to == PAUSED) {
+            agentCommandSender.sendPauseVm(saved.getNodeId(), saved.getId());
+        } else if (to == ACTIVE && current == PAUSED) {
+            agentCommandSender.sendResumeVm(saved.getNodeId(), saved.getId());
         } else if (to == ENDED || to == FAILED) {
             if (wireGuardService != null) {
                 try {
@@ -394,13 +400,43 @@ public class LeaseService {
             throw new IllegalArgumentException("Unauthorized: Only the lease borrower can end this lease");
         }
 
-        if (lease.getState() == ACTIVE || lease.getState() == EXPIRING) {
+        if (lease.getState() == ACTIVE || lease.getState() == EXPIRING || lease.getState() == PAUSED) {
             return transition(leaseId, ENDED, "Ended by borrower");
         } else if (lease.getState() == REQUESTED || lease.getState() == APPROVED) {
             return transition(leaseId, CANCELLED, "Cancelled by borrower");
         } else {
             throw new InvalidStateException(lease.getState(), ENDED);
         }
+    }
+
+    @Transactional
+    public Lease pauseLease(UUID leaseId, UUID borrowerId) {
+        Lease lease = leaseRepository.findById(leaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Lease not found: " + leaseId));
+
+        if (!lease.getBorrowerId().equals(borrowerId)) {
+            User caller = userRepository.findById(borrowerId).orElse(null);
+            if (caller == null || caller.getRole() != com.minidc.common.enums.Role.ADMIN) {
+                throw new IllegalArgumentException("Unauthorized: Only the borrower or admin can pause this lease");
+            }
+        }
+
+        return transition(leaseId, PAUSED, "Paused by borrower");
+    }
+
+    @Transactional
+    public Lease resumeLease(UUID leaseId, UUID borrowerId) {
+        Lease lease = leaseRepository.findById(leaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Lease not found: " + leaseId));
+
+        if (!lease.getBorrowerId().equals(borrowerId)) {
+            User caller = userRepository.findById(borrowerId).orElse(null);
+            if (caller == null || caller.getRole() != com.minidc.common.enums.Role.ADMIN) {
+                throw new IllegalArgumentException("Unauthorized: Only the borrower or admin can resume this lease");
+            }
+        }
+
+        return transition(leaseId, ACTIVE, "Resumed by borrower");
     }
 
     @Transactional(readOnly = true)

@@ -78,6 +78,8 @@ class DockerDriverTest {
         List<String> vms = driver.listVms();
         assertNotNull(vms);
 
+        assertDoesNotThrow(() -> driver.pauseVm("lease-12345678"));
+        assertDoesNotThrow(() -> driver.resumeVm("lease-12345678"));
         assertDoesNotThrow(() -> driver.destroyVm("lease-12345678"));
     }
 

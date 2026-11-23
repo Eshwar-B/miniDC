@@ -61,6 +61,7 @@ class LeaseServiceTest {
     private User currentUser;
     private Offer currentOffer;
     private Node currentNode;
+    private Lease currentLease;
     private long activeLeaseCount = 0;
     private List<Lease> existingNodeLeases = Collections.emptyList();
 
@@ -76,11 +77,18 @@ class LeaseServiceTest {
             public boolean sendCreateVm(UUID n, com.minidc.common.ws.payload.CreateVmPayload p) { return true; }
             @Override
             public boolean sendDestroyVm(UUID n, UUID l) { return true; }
+            @Override
+            public boolean sendPauseVm(UUID n, UUID l) { return true; }
+            @Override
+            public boolean sendResumeVm(UUID n, UUID l) { return true; }
         };
 
         leaseRepository = proxy(LeaseRepository.class, (p, method, args) -> {
             if ("countByBorrowerIdAndStateIn".equals(method.getName())) {
                 return activeLeaseCount;
+            }
+            if ("findById".equals(method.getName())) {
+                return Optional.ofNullable(currentLease);
             }
             if ("findByNodeIdAndStateIn".equals(method.getName())) {
                 return existingNodeLeases;
@@ -202,6 +210,23 @@ class LeaseServiceTest {
         // 7000 + 2048 = 9048 > offer max 8192
         CreateLeaseRequest request = new CreateLeaseRequest(offerId, 2048, 2, 20, 2);
         assertThrows(CapacityExceededException.class, () -> leaseService.createLease(borrowerId, request));
+    }
+
+    @Test
+    @DisplayName("Should successfully pause active lease and resume it")
+    void testPauseAndResumeLease() {
+        Lease active = new Lease(
+                UUID.randomUUID(), offerId, borrowerId, nodeId,
+                2048, 2, 20, 2, LeaseState.ACTIVE,
+                "lease-test", 33001, "minidc", "enc", null, null, Instant.now(), Instant.now(), null
+        );
+        currentLease = active;
+
+        Lease paused = leaseService.pauseLease(active.getId(), borrowerId);
+        assertEquals(LeaseState.PAUSED, paused.getState());
+
+        Lease resumed = leaseService.resumeLease(active.getId(), borrowerId);
+        assertEquals(LeaseState.ACTIVE, resumed.getState());
     }
 
     @SuppressWarnings("unchecked")

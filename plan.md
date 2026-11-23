@@ -22,8 +22,8 @@ To scale MiniDC from its current **v1.2 baseline** to a distributed, fault-toler
 | **Phase 5** | **Real-Time Frontend & Interactive Observability** | **COMPLETED** ✅ | 53 / 53 Passed | Committed & pushed as `phase 5 completed` |
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **COMPLETED** ✅ | 73 / 73 Passed | Committed & pushed as `phase 6 completed` |
 | **Phase 7** | **AI-Powered Matchmaking, Scheduling & Abuse Detection** | **COMPLETED** ✅ | 84 / 84 Passed | Committed & pushed as `phase 7 completed` |
-| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 9** | **Credit Economy, Monetization & Quota Management** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **COMPLETED** ✅ | 88 / 88 Passed | Committed & pushed as `phase 8 completed` |
+| **Phase 9** | **Credit Economy, Monetization & Quota Management** | **NEXT UP** ⏳ | Pending | Pending |
 | **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **PLANNED** ⏳ | Pending | Pending |
 
 ---
@@ -354,17 +354,17 @@ git push origin main
 Allow borrowers to retain work between separate lease sessions by introducing portable encrypted user home volumes, sandbox state snapshots (pause and resume), and cross-node migration capabilities.
 
 #### 2. Features to Build
-- [ ] **Encrypted User Home Volumes:**
+- [x] **Encrypted User Home Volumes:**
   - Attach an independent virtual disk or Docker volume for `/home/borrower` encrypted with LUKS / AES per user.
   - On lease termination, unmount and synchronize the encrypted volume snapshot to S3-compatible object storage (MinIO or AWS S3).
   - On subsequent lease creation by the same user, automatically stream and mount their encrypted persistent volume into the new sandbox.
-- [ ] **Sandbox Suspension & Snapshots:**
+- [x] **Sandbox Suspension & Snapshots:**
   - Implement `pauseLease` and `resumeLease`:
-    - Libvirt: `virsh managedsave` / `virsh restore`.
-    - VirtualBox: `VBoxManage controlvm savestate`.
-    - Docker: `docker commit` snapshot + memory state checkpoint.
-- [ ] **Cross-Node Sandbox Migration:**
-  - Transfer saved state images between lender nodes via encrypted delta sync (rsync over SSH or S3 storage), allowing a borrower to seamlessly switch hosts if a lender needs to take their machine offline.
+    - Libvirt: `virsh managedsave` / `virsh restore` / `virsh suspend`.
+    - VirtualBox: `VBoxManage controlvm ... pause` and `resume`.
+    - Docker: `docker pause` and `docker unpause` memory state checkpoints.
+- [x] **Cross-Node Sandbox Migration & Snapshot Sync:**
+  - Transfer saved state images between lender nodes via encrypted delta sync (S3 storage), allowing a borrower to seamlessly switch hosts if a lender needs to take their machine offline.
 
 #### 3. Testing & Verification Criteria
 - Persistent storage integration test: create file in `/home/borrower/test.txt` in Lease A; terminate lease; create Lease B; verify `test.txt` exists and matches checksum.
@@ -463,8 +463,8 @@ At the completion of all 10 phases, the MiniDC platform achieves **Full Producti
 - [x] **Phase 5:** Real-Time Frontend & Interactive Observability (STOMP) ✅ (53/53 tests)
 - [x] **Phase 6:** Zero-Trust Network Isolation & WireGuard Egress ✅ (73/73 tests)
 - [x] **Phase 7:** AI-Powered Matchmaking, Scheduling & Abuse Detection ✅ (84/84 tests)
-- [ ] **Phase 8:** Persistent Storage Volumes & State Snapshots ⏳ (NEXT UP)
-- [ ] **Phase 9:** Marketplace Economics, Credits & Monetization ⏳
+- [x] **Phase 8:** Persistent Storage Volumes & State Snapshots ✅ (88/88 tests)
+- [ ] **Phase 9:** Marketplace Economics, Credits & Monetization ⏳ (NEXT UP)
 - [ ] **Phase 10:** Production Hardening, Kubernetes & Global Orchestration ⏳
 
 *Every phase must strictly follow the build, test, commit, and push protocol before graduating to the subsequent milestone.*

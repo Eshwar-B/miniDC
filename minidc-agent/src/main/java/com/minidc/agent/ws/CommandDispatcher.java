@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Dispatches server commands, executes resource validation, and sends response payloads back to the control server.
@@ -58,10 +59,36 @@ public class CommandDispatcher {
         switch (message.type()) {
             case CREATE_VM -> handleCreateVm(message);
             case DESTROY_VM -> handleDestroyVm(message);
+            case PAUSE_VM -> handlePauseVm(message);
+            case RESUME_VM -> handleResumeVm(message);
             case EGRESS_CONFIG -> handleEgressConfig(message);
             case PAUSE_NODE -> log.info("Received PAUSE_NODE command from server");
             case RESUME_NODE -> log.info("Received RESUME_NODE command from server");
             default -> log.warn("Unhandled server command type: {}", message.type());
+        }
+    }
+
+    private void handlePauseVm(WsMessage message) {
+        try {
+            if (message.payload() != null && message.payload().has("leaseId")) {
+                UUID leaseId = UUID.fromString(message.payload().get("leaseId").asText());
+                log.info("Processing PAUSE_VM instruction for lease {}", leaseId);
+                vmManager.pause(leaseId);
+            }
+        } catch (Exception e) {
+            log.error("Failed handling PAUSE_VM", e);
+        }
+    }
+
+    private void handleResumeVm(WsMessage message) {
+        try {
+            if (message.payload() != null && message.payload().has("leaseId")) {
+                UUID leaseId = UUID.fromString(message.payload().get("leaseId").asText());
+                log.info("Processing RESUME_VM instruction for lease {}", leaseId);
+                vmManager.resume(leaseId);
+            }
+        } catch (Exception e) {
+            log.error("Failed handling RESUME_VM", e);
         }
     }
 

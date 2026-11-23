@@ -6,14 +6,15 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)]()
 [![React](https://img.shields.io/badge/React-18%20%7C%20Vite%20%7C%20TS-61dafb.svg)]()
 [![Hypervisors](https://img.shields.io/badge/Hypervisors-KVM%20%7C%20VirtualBox%20%7C%20Docker-blueviolet.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-84%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-88%20passing-brightgreen.svg)]()
 
 MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve).
 - A **borrower** browses available offers on a web marketplace and requests a **lease**.
 - When approved, the agent provisions an isolated, clean Ubuntu desktop sandbox (via **KVM/libvirt** on Linux, **VirtualBox** on Windows, or **Docker** container desktop for demos).
 - The borrower accesses the full interactive desktop directly in a web browser using **Apache Guacamole** (streaming RDP to xrdp inside the sandbox).
-- At lease expiration (or when manually ended/killed), the sandbox and all associated storage are destroyed.
+- At lease expiration (or when manually ended/killed), the sandbox and all associated ephemeral storage are destroyed.
+- **Persistent storage volumes** allow borrowers to attach reusable encrypted disks across sessions and pause/resume sandboxes seamlessly.
 
 > 📖 **For complete setup, feature details, and user guides → see [USAGE.md](./USAGE.md)**
 
@@ -21,16 +22,16 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 
 ## 1. Current Project Status
 
-- **Version:** `1.7` — Phases 1–7 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation + AI Matchmaking & Abuse Detection).
+- **Version:** `1.8` — Phases 1–8 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation + AI Matchmaking & Abuse Detection + Persistent Storage Volumes & State Snapshots).
 - **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
-- **Test Suite Status:** **84/84 unit tests passing** (`mvn test` runs in ~25s with 0 errors, 0 failures).
-- **Frontend Status:** Clean compilation (`npm run build` bundles 65 modules cleanly into static assets).
+- **Test Suite Status:** **88/88 unit tests passing** (`mvn test` runs in ~25s with 0 errors, 0 failures).
+- **Frontend Status:** Clean compilation (`npm run build` bundles 66 modules cleanly into static assets).
 - **Live API Tests:** 10/10 end-to-end integration scenarios verified against running server.
 - **Admin Credentials (dev):** `admin@minidc.local` / `admin12345`
 - **Driver Support:**
-  - `LibvirtDriver`: Fast native KVM/QEMU virtualization on Linux.
-  - `VirtualBoxDriver`: Headless VirtualBox 7.x management with NAT port forwarding on Windows 10/11.
-  - `DockerDriver`: Fast lightweight container desktop (`minidc-desktop:latest`) for rapid single-machine demos and testing.
+  - `LibvirtDriver`: Fast native KVM/QEMU virtualization on Linux with suspend/resume state.
+  - `VirtualBoxDriver`: Headless VirtualBox 7.x management with NAT port forwarding on Windows 10/11 with pause/resume state.
+  - `DockerDriver`: Fast lightweight container desktop (`minidc-desktop:latest`) with pause/resume support.
 - **Database:** PostgreSQL 16 with Flyway transactional migrations, UTC timezone enforcement, and support for:
   - Docker Compose service (`postgres:16`).
   - Embedded PostgreSQL (`io.zonky.test:embedded-postgres`) for zero-dependency local development via `--spring.profiles.active=dev,embedded`.
@@ -40,6 +41,7 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - **Real-Time WebSockets (STOMP):** Bi-directional STOMP WebSocket push (`/ws/stomp`) with JWT channel authentication, zero-polling marketplace updates, instant lease approval dispatches, and live CPU/RAM telemetry gauges on lease cards.
 - **Zero-Trust Network Isolation & WireGuard Egress:** Strict RFC 1918 private LAN blocking (`nftables` on Linux, Defender Firewall on Windows), anti-spam/anti-abuse port filters (SMTP 25/465/587 and outbound SSH 22 blocked), X25519 WireGuard client tunnel manager, and centralized exit gateway IP pool allocation.
 - **AI Matchmaking, Scheduling & Abuse Detection:** Heuristic node reliability scoring (A+ through F), smart multi-factor offer recommendation assistant, real-time cryptomining heuristic detection (pinned 95%+ CPU over 3 windows), and automated lease quarantine.
+- **Persistent Storage Volumes & State Snapshots:** Persistent home volumes (`/home/borrower`), volume attachment mutual exclusion, encrypted S3/MinIO snapshot synchronization, and multi-hypervisor sandbox pause/resume.
 
 > 📖 **Full documentation: [USAGE.md](./USAGE.md)** | Phase tracker: [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 

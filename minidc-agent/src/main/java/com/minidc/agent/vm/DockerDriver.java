@@ -127,6 +127,32 @@ public class DockerDriver implements HypervisorDriver {
     }
 
     @Override
+    public void pauseVm(String vmName) {
+        if (properties.dryRun()) {
+            log.info("Dry-run: DockerDriver pauseVm for {}", vmName);
+            return;
+        }
+        try {
+            shell.run(List.of("docker", "pause", vmName), Duration.ofSeconds(15));
+        } catch (Exception e) {
+            log.warn("Failed pausing Docker container {}: {}", vmName, e.getMessage());
+        }
+    }
+
+    @Override
+    public void resumeVm(String vmName) {
+        if (properties.dryRun()) {
+            log.info("Dry-run: DockerDriver resumeVm for {}", vmName);
+            return;
+        }
+        try {
+            shell.run(List.of("docker", "unpause", vmName), Duration.ofSeconds(15));
+        } catch (Exception e) {
+            log.warn("Failed resuming Docker container {}: {}", vmName, e.getMessage());
+        }
+    }
+
+    @Override
     public List<String> listVms() {
         if (properties.dryRun()) {
             return List.of();

@@ -40,6 +40,14 @@ public class AgentCommandSender {
         return send(nodeId, MessageType.DESTROY_VM, new DestroyVmPayload(leaseId));
     }
 
+    public boolean sendPauseVm(UUID nodeId, UUID leaseId) {
+        return send(nodeId, MessageType.PAUSE_VM, java.util.Map.of("leaseId", leaseId.toString()));
+    }
+
+    public boolean sendResumeVm(UUID nodeId, UUID leaseId) {
+        return send(nodeId, MessageType.RESUME_VM, java.util.Map.of("leaseId", leaseId.toString()));
+    }
+
     public boolean sendPauseNode(UUID nodeId) {
         return send(nodeId, MessageType.PAUSE_NODE, null);
     }

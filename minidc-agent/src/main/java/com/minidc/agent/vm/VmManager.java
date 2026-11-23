@@ -95,6 +95,26 @@ public class VmManager {
         }
     }
 
+    public void pause(UUID leaseId) {
+        String vmName = "lease-" + leaseId.toString().substring(0, 8);
+        log.info("Pausing VM {}", vmName);
+        try {
+            driver.pauseVm(vmName);
+        } catch (Exception e) {
+            log.error("Failed pausing VM {}: {}", vmName, e.getMessage());
+        }
+    }
+
+    public void resume(UUID leaseId) {
+        String vmName = "lease-" + leaseId.toString().substring(0, 8);
+        log.info("Resuming VM {}", vmName);
+        try {
+            driver.resumeVm(vmName);
+        } catch (Exception e) {
+            log.error("Failed resuming VM {}: {}", vmName, e.getMessage());
+        }
+    }
+
     public List<String> listRunningVms() {
         return driver.listVms();
     }

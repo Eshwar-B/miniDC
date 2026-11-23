@@ -166,6 +166,28 @@ public class LibvirtDriver implements HypervisorDriver {
     }
 
     @Override
+    public void pauseVm(String vmName) {
+        if (properties.dryRun()) {
+            log.info("Dry-run: LibvirtDriver pauseVm for {}", vmName);
+            return;
+        }
+        try {
+            shell.run(List.of("virsh", "suspend", vmName), Duration.ofSeconds(15));
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void resumeVm(String vmName) {
+        if (properties.dryRun()) {
+            log.info("Dry-run: LibvirtDriver resumeVm for {}", vmName);
+            return;
+        }
+        try {
+            shell.run(List.of("virsh", "resume", vmName), Duration.ofSeconds(15));
+        } catch (Exception ignored) {}
+    }
+
+    @Override
     public List<String> listVms() {
         if (properties.dryRun()) {
             return List.of();

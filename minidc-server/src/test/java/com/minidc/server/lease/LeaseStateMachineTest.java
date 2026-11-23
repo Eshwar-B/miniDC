@@ -205,5 +205,15 @@ class LeaseStateMachineTest {
             this.lastDestroyVmLeaseId = leaseId;
             return true;
         }
+
+        @Override
+        public boolean sendPauseVm(UUID nodeId, UUID leaseId) {
+            return true;
+        }
+
+        @Override
+        public boolean sendResumeVm(UUID nodeId, UUID leaseId) {
+            return true;
+        }
     }
 }

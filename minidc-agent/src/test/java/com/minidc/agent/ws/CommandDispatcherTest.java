@@ -101,4 +101,16 @@ class CommandDispatcherTest {
 
         verify(wireGuardTunnelManager).startTunnel(any(WireGuardPeerConfig.class));
     }
+
+    @Test
+    void shouldHandlePauseAndResumeVm() {
+        UUID leaseId = UUID.randomUUID();
+        WsMessage pauseMsg = new WsMessage(MessageType.PAUSE_VM, objectMapper.valueToTree(java.util.Map.of("leaseId", leaseId.toString())));
+        dispatcher.dispatch(pauseMsg);
+        verify(vmManager).pause(eq(leaseId));
+
+        WsMessage resumeMsg = new WsMessage(MessageType.RESUME_VM, objectMapper.valueToTree(java.util.Map.of("leaseId", leaseId.toString())));
+        dispatcher.dispatch(resumeMsg);
+        verify(vmManager).resume(eq(leaseId));
+    }
 }

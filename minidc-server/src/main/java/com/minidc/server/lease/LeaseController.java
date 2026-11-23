@@ -88,4 +88,20 @@ public class LeaseController {
     ) {
         return LeaseResponse.from(leaseService.endLease(id, user.id()));
     }
+
+    @PostMapping("/{id}/pause")
+    public LeaseResponse pause(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal CurrentUser user
+    ) {
+        return LeaseResponse.from(leaseService.pauseLease(id, user.id()));
+    }
+
+    @PostMapping("/{id}/resume")
+    public LeaseResponse resume(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal CurrentUser user
+    ) {
+        return LeaseResponse.from(leaseService.resumeLease(id, user.id()));
+    }
 }

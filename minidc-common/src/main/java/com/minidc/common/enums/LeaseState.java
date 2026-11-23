@@ -8,6 +8,7 @@ public enum LeaseState {
     APPROVED,
     PROVISIONING,
     ACTIVE,
+    PAUSED,
     EXPIRING,
     ENDED,
     REJECTED,

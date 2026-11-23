@@ -18,6 +18,10 @@ public interface HypervisorDriver {
 
     void destroyVm(String vmName);
 
+    void pauseVm(String vmName);
+
+    void resumeVm(String vmName);
+
     List<String> listVms();
 
     HostInfo hostInfo();
