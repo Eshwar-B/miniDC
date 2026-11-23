@@ -125,6 +125,12 @@ export const api = {
   endLease: (id: string) =>
     request<LeaseResponse>(`/api/leases/${id}/end`, { method: 'POST' }),
 
+  pauseLease: (id: string) =>
+    request<LeaseResponse>(`/api/leases/${id}/pause`, { method: 'POST' }),
+
+  resumeLease: (id: string) =>
+    request<LeaseResponse>(`/api/leases/${id}/resume`, { method: 'POST' }),
+
   getConnectUrl: (id: string) =>
     request<ConnectResponse>(`/api/leases/${id}/connect`),
 
@@ -169,5 +175,54 @@ export const api = {
 
   getAdminAbuseAlerts: () =>
     request<import('./types').AbuseAlert[]>('/api/admin/abuse-alerts'),
+
+  // Phase 8: Volumes & State Snapshots
+  getMyVolumes: () =>
+    request<import('./types').VolumeInfo[]>('/api/volumes'),
+
+  createVolume: (data: { name: string; sizeGb: number; mountPath?: string }) =>
+    request<import('./types').VolumeInfo>('/api/volumes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  attachVolume: (id: string, leaseId: string) =>
+    request<import('./types').VolumeInfo>(`/api/volumes/${id}/attach`, {
+      method: 'POST',
+      body: JSON.stringify({ leaseId }),
+    }),
+
+  detachVolume: (id: string) =>
+    request<import('./types').VolumeInfo>(`/api/volumes/${id}/detach`, {
+      method: 'POST',
+    }),
+
+  createVolumeSnapshot: (id: string) =>
+    request<import('./types').VolumeSnapshotInfo>(`/api/volumes/${id}/snapshots`, {
+      method: 'POST',
+    }),
+
+  deleteVolume: (id: string) =>
+    request<void>(`/api/volumes/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // Phase 9: Wallet & Billing
+  getWallet: () =>
+    request<import('./types').WalletInfo>('/api/wallet'),
+
+  topUpWallet: (amount: number) =>
+    request<import('./types').WalletInfo>('/api/wallet/topup', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    }),
+
+  getWalletTransactions: () =>
+    request<import('./types').WalletTransactionInfo[]>('/api/wallet/transactions'),
+
+  getBillingEstimate: (cores: number, ramMb: number, diskGb: number, hours: number) =>
+    request<import('./types').RateEstimate>(
+      `/api/billing/estimate?cores=${cores}&ramMb=${ramMb}&diskGb=${diskGb}&hours=${hours}`
+    ),
 };
 

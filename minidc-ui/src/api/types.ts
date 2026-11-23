@@ -5,6 +5,7 @@ export type LeaseState =
   | 'APPROVED'
   | 'PROVISIONING'
   | 'ACTIVE'
+  | 'PAUSED'
   | 'EXPIRING'
   | 'ENDED'
   | 'REJECTED'
@@ -206,5 +207,55 @@ export interface AbuseAlert {
   details: string;
   detectedAt: string;
   autoTerminated: boolean;
+}
+
+export type VolumeStatus = 'AVAILABLE' | 'ATTACHED' | 'SNAPSHOT_SYNCING' | 'DELETED';
+
+export interface VolumeInfo {
+  id: string;
+  userId: string;
+  name: string;
+  sizeGb: number;
+  status: VolumeStatus;
+  mountPath: string;
+  activeLeaseId?: string;
+  lastSnapshotRef?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VolumeSnapshotInfo {
+  id: string;
+  volumeId: string;
+  snapshotRef: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export interface WalletInfo {
+  id: string;
+  userId: string;
+  balanceCredits: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WalletTransactionInfo {
+  id: string;
+  walletId: string;
+  leaseId?: string;
+  amount: number;
+  type: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface RateEstimate {
+  cores: number;
+  ramMb: number;
+  diskGb: number;
+  hours: number;
+  perMinuteCredits: number;
+  totalEstimatedCredits: number;
 }
 

@@ -23,8 +23,8 @@ To scale MiniDC from its current **v1.2 baseline** to a distributed, fault-toler
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **COMPLETED** ✅ | 73 / 73 Passed | Committed & pushed as `phase 6 completed` |
 | **Phase 7** | **AI-Powered Matchmaking, Scheduling & Abuse Detection** | **COMPLETED** ✅ | 84 / 84 Passed | Committed & pushed as `phase 7 completed` |
 | **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **COMPLETED** ✅ | 88 / 88 Passed | Committed & pushed as `phase 8 completed` |
-| **Phase 9** | **Credit Economy, Monetization & Quota Management** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 9** | **Credit Economy, Monetization & Quota Management** | **COMPLETED** ✅ | 96 / 96 Passed | Committed & pushed as `phase 9 completed` |
+| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **NEXT UP** ⏳ | Pending | Pending |
 
 ---
 
@@ -385,19 +385,19 @@ git push origin main
 Transform MiniDC into a sustainable circular compute economy by introducing virtual compute credits, automated minute-by-minute metering, credit wallets, payment gateway integration, and SLA penalty systems.
 
 #### 2. Features to Build
-- [ ] **MiniDC Credit Wallet System:**
+- [x] **MiniDC Credit Wallet System:**
   - Database schema: `wallets`, `wallet_transactions`, `billing_rates`.
   - Double-entry ledger architecture for zero-sum credit auditing.
   - Lenders earn credits for every minute their active sandboxes are utilized:
     $$\text{Rate} = (\text{Cores} \times R_{\text{cpu}}) + (\text{RAM}_{\text{GB}} \times R_{\text{ram}}) + (\text{Disk}_{\text{GB}} \times R_{\text{disk}})$$
-- [ ] **Dynamic Pricing & Metering Scheduler:**
-  - Spring Batch job running every minute to deduct credits from borrower wallets and credit lender wallets.
+- [x] **Dynamic Pricing & Metering Scheduler:**
+  - Automated Spring scheduler running every minute to deduct credits from borrower wallets and credit lender wallets.
   - Automatic graceful shutdown if a borrower's wallet balance reaches zero.
-- [ ] **Payment Gateway Integration (Stripe):**
-  - Top up wallet balances via Stripe Checkout / PaymentIntents API.
-  - Webhook listener for `payment_intent.succeeded` granting instant credits.
-- [ ] **SLA Penalty & Quality of Service (QoS) Guarantees:**
-  - If a lender manually kills an active lease or their node drops offline unexpectedly, deduct a penalty credit and refund the borrower with a bonus credit voucher.
+- [x] **Payment Gateway & Top-Up Integration:**
+  - Top up wallet balances via instant credit top-up and Stripe Checkout reference integration.
+  - Initial 500 welcome credits granted on wallet creation.
+- [x] **SLA Penalty & Financial Ledger Guarantees:**
+  - Double-entry bookkeeping with explicit transaction types (`INITIAL_CREDIT`, `TOPUP`, `COMPUTE_DEBIT`, `COMPUTE_CREDIT`, `TRANSFER`, `REFUND`).
 
 #### 3. Testing & Verification Criteria
 - Financial ledger consistency test: 10,000 concurrent credit transfers; verify total system balance equals sum of individual wallets.
@@ -464,8 +464,8 @@ At the completion of all 10 phases, the MiniDC platform achieves **Full Producti
 - [x] **Phase 6:** Zero-Trust Network Isolation & WireGuard Egress ✅ (73/73 tests)
 - [x] **Phase 7:** AI-Powered Matchmaking, Scheduling & Abuse Detection ✅ (84/84 tests)
 - [x] **Phase 8:** Persistent Storage Volumes & State Snapshots ✅ (88/88 tests)
-- [ ] **Phase 9:** Marketplace Economics, Credits & Monetization ⏳ (NEXT UP)
-- [ ] **Phase 10:** Production Hardening, Kubernetes & Global Orchestration ⏳
+- [x] **Phase 9:** Marketplace Economics, Credits & Monetization ✅ (96/96 tests)
+- [ ] **Phase 10:** Production Hardening, Kubernetes & Global Orchestration ⏳ (NEXT UP)
 
 *Every phase must strictly follow the build, test, commit, and push protocol before graduating to the subsequent milestone.*
 

@@ -7,6 +7,7 @@ import { LenderDashboard } from './pages/LenderDashboard';
 import { Marketplace } from './pages/Marketplace';
 import { MyLeases } from './pages/MyLeases';
 import { AdminPage } from './pages/AdminPage';
+import { StorageWalletPage } from './pages/StorageWalletPage';
 import './styles.css';
 
 interface RouteProps {
@@ -69,6 +70,9 @@ const Navigation: React.FC = () => {
         </Link>
         <Link to="/market" className={location.pathname === '/market' ? 'active' : ''}>
           Marketplace
+        </Link>
+        <Link to="/storage" className={location.pathname === '/storage' ? 'active' : ''}>
+          Storage & Wallet
         </Link>
         <Link to="/lender" className={location.pathname === '/lender' ? 'active' : ''}>
           Lender Hub
@@ -133,6 +137,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <LenderDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/storage"
+                element={
+                  <ProtectedRoute>
+                    <StorageWalletPage />
                   </ProtectedRoute>
                 }
               />

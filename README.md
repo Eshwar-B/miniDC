@@ -6,15 +6,16 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)]()
 [![React](https://img.shields.io/badge/React-18%20%7C%20Vite%20%7C%20TS-61dafb.svg)]()
 [![Hypervisors](https://img.shields.io/badge/Hypervisors-KVM%20%7C%20VirtualBox%20%7C%20Docker-blueviolet.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-88%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-96%20passing-brightgreen.svg)]()
 
 MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
-- A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve).
-- A **borrower** browses available offers on a web marketplace and requests a **lease**.
+- A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve), earning **compute credits** for every active lease minute.
+- A **borrower** browses available offers on a web marketplace and requests a **lease** funded through their credit wallet.
 - When approved, the agent provisions an isolated, clean Ubuntu desktop sandbox (via **KVM/libvirt** on Linux, **VirtualBox** on Windows, or **Docker** container desktop for demos).
 - The borrower accesses the full interactive desktop directly in a web browser using **Apache Guacamole** (streaming RDP to xrdp inside the sandbox).
 - At lease expiration (or when manually ended/killed), the sandbox and all associated ephemeral storage are destroyed.
 - **Persistent storage volumes** allow borrowers to attach reusable encrypted disks across sessions and pause/resume sandboxes seamlessly.
+- **Fair circular economics** automatically meters active leases, transfers credits from borrower to lender, and safeguards compute capacity with automated credit top-up and exhaustion management.
 
 > 📖 **For complete setup, feature details, and user guides → see [USAGE.md](./USAGE.md)**
 
@@ -22,9 +23,9 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 
 ## 1. Current Project Status
 
-- **Version:** `1.8` — Phases 1–8 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation + AI Matchmaking & Abuse Detection + Persistent Storage Volumes & State Snapshots).
+- **Version:** `1.9` — Phases 1–9 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation + AI Matchmaking & Abuse Detection + Persistent Storage Volumes & State Snapshots + Marketplace Economics, Credits & Monetization).
 - **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
-- **Test Suite Status:** **88/88 unit tests passing** (`mvn test` runs in ~25s with 0 errors, 0 failures).
+- **Test Suite Status:** **96/96 unit tests passing** (`mvn test` runs in ~25s with 0 errors, 0 failures).
 - **Frontend Status:** Clean compilation (`npm run build` bundles 66 modules cleanly into static assets).
 - **Live API Tests:** 10/10 end-to-end integration scenarios verified against running server.
 - **Admin Credentials (dev):** `admin@minidc.local` / `admin12345`
@@ -42,6 +43,7 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - **Zero-Trust Network Isolation & WireGuard Egress:** Strict RFC 1918 private LAN blocking (`nftables` on Linux, Defender Firewall on Windows), anti-spam/anti-abuse port filters (SMTP 25/465/587 and outbound SSH 22 blocked), X25519 WireGuard client tunnel manager, and centralized exit gateway IP pool allocation.
 - **AI Matchmaking, Scheduling & Abuse Detection:** Heuristic node reliability scoring (A+ through F), smart multi-factor offer recommendation assistant, real-time cryptomining heuristic detection (pinned 95%+ CPU over 3 windows), and automated lease quarantine.
 - **Persistent Storage Volumes & State Snapshots:** Persistent home volumes (`/home/borrower`), volume attachment mutual exclusion, encrypted S3/MinIO snapshot synchronization, and multi-hypervisor sandbox pause/resume.
+- **Marketplace Economics, Credits & Monetization:** User credit wallets with 500 welcome credits, double-entry financial audit ledger, per-minute automated compute metering, auto-termination on credit exhaustion, and interactive pricing calculator.
 
 > 📖 **Full documentation: [USAGE.md](./USAGE.md)** | Phase tracker: [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 

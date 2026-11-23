@@ -643,6 +643,17 @@ Authorization: Bearer <member-token>
 
 ---
 
+### Lender Feature 7 – Earning Compute Credits & Monetization (Phase 9)
+
+Lenders earn virtual compute credits continuously for every minute their hardware runs an active borrower sandbox.
+
+- **Automated Metering:** Every minute, the server calculates:
+  $$\text{Credits / Hour} = (\text{Cores} \times 2) + (\text{RAM}_{\text{GB}} \times 1) + \left(\frac{\text{Disk}_{\text{GB}}}{10}\right)$$
+- **Instant Credit:** The earned credits are credited directly to the lender's credit wallet and logged in the double-entry transaction ledger with type `COMPUTE_CREDIT`.
+- **Wallet View:** Lenders can view their total accumulated balance and transaction breakdown under the **Storage & Wallet** tab.
+
+---
+
 ## 10. Borrower (Member) – Complete Feature Guide
 
 Any `MEMBER` account can browse the marketplace and request compute time.
@@ -868,6 +879,71 @@ Snapshots compute SHA-256 integrity checksums and archive state deltas to cloud 
 
 ---
 
+### Borrower Feature 9 – Credit Wallet, Instant Top-Up & Financial Ledger (Phase 9)
+
+Every registered user receives a personal compute credit wallet automatically pre-loaded with **500 welcome credits**.
+
+**Via UI:** Click the **"Storage & Wallet"** link in top navigation.
+- View live credit balance card.
+- Click instant top-up buttons: **+100**, **+500**, **+1,000**, or **+5,000** credits.
+- Review the complete double-entry transaction ledger with timestamps, amounts, and transaction categories (`INITIAL_CREDIT`, `TOPUP`, `COMPUTE_DEBIT`, `COMPUTE_CREDIT`).
+
+**Via API:**
+```http
+GET /api/wallet
+Authorization: Bearer <member-token>
+```
+Response:
+```json
+{
+  "userId": "user-uuid",
+  "balance": 500,
+  "createdAt": "2026-11-23T12:00:00Z"
+}
+```
+
+**Top up credits:**
+```http
+POST /api/wallet/topup?amount=1000
+Authorization: Bearer <member-token>
+```
+
+**View transactions:**
+```http
+GET /api/wallet/transactions
+Authorization: Bearer <member-token>
+```
+
+---
+
+### Borrower Feature 10 – Pricing Rate Calculator (Phase 9)
+
+Before creating a lease, borrowers can estimate the exact credit burn rate based on their desired hardware specs.
+
+**Via UI:** Storage & Wallet → **"Estimate Cost"** interactive calculator.
+
+**Via API:**
+```http
+GET /api/billing/estimate?cores=4&ramMb=8192&diskGb=50&hours=2
+Authorization: Bearer <member-token>
+```
+Response:
+```json
+{
+  "cores": 4,
+  "ramMb": 8192,
+  "diskGb": 50,
+  "hours": 2,
+  "creditsPerHour": 21,
+  "creditsPerMinute": 0.35,
+  "totalEstimatedCredits": 42
+}
+```
+
+> **Automated Depletion Safeguard:** If a borrower's wallet balance reaches zero while a lease is running, the background metering daemon gracefully terminates the lease to prevent debt.
+
+---
+
 ## 11. Agent (Edge Node Daemon) – Setup Guide
 
 The agent runs on the **lender's physical machine** and manages VM lifecycle on behalf of the control server.
@@ -1017,6 +1093,15 @@ Authorization: Bearer <member-token>
 | `POST` | `/api/volumes/{id}/snapshots` | Create an encrypted volume snapshot |
 | `DELETE` | `/api/volumes/{id}` | Delete persistent volume |
 
+### Wallet & Billing Endpoints (MEMBER role, Phase 9)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/wallet` | Get user credit wallet balance |
+| `POST` | `/api/wallet/topup` | Top up credit wallet (`?amount=`) |
+| `GET` | `/api/wallet/transactions` | Get double-entry financial audit ledger |
+| `GET` | `/api/billing/estimate` | Compute real-time lease cost estimate |
+
 ### Guacamole / Desktop Endpoints (MEMBER role, lease owner)
 
 | Method | Path | Description |
@@ -1140,15 +1225,18 @@ Retry-After: 60
 | Persistent encrypted storage volumes (`/api/volumes`) | ✅ Done | 8 |
 | Encrypted S3/MinIO snapshot synchronization and checksumming | ✅ Done | 8 |
 | Multi-hypervisor VM sandbox pause & resume (`/api/leases/{id}/pause`) | ✅ Done | 8 |
+| Compute credit wallets with 500 initial credits (`/api/wallet`) | ✅ Done | 9 |
+| Automated per-minute compute metering and double-entry ledger | ✅ Done | 9 |
+| Auto-termination on borrower credit exhaustion | ✅ Done | 9 |
+| Interactive pricing estimator and instant credit top-up | ✅ Done | 9 |
 | Admin panel (invites, banning, audit log, all-nodes, all-leases, egress, abuse alerts) | ✅ Done | 1–7 |
-| React frontend (login, register, marketplace, dashboard, leases, admin) | ✅ Done | 1–7 |
-| 88/88 unit tests passing | ✅ Done | 1–8 |
+| React frontend (login, register, marketplace, dashboard, leases, storage/wallet, admin) | ✅ Done | 1–9 |
+| 96/96 unit tests passing | ✅ Done | 1–9 |
 
-### 🚧 Coming Soon (Planned Phases 9–10)
+### 🚧 Coming Soon (Planned Phase 10)
 
 | Feature | Phase | Why |
 |---|---|---|
-| Compute credits and billing | Phase 9 | Fair credit exchange and Stripe payouts for lenders |
 | Kubernetes deployment + Helm charts | Phase 10 | Production high-availability clustering |
 | GitHub Actions CI/CD pipeline | Phase 10 | Automated test + build + deploy on push |
 | OpenTelemetry distributed tracing | Phase 10 | Full observability across server and agents |

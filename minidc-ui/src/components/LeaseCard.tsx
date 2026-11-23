@@ -63,9 +63,28 @@ export const LeaseCard: React.FC<LeaseCardProps> = ({ lease, isLender, onActionC
     }
   };
 
+  const handlePause = async () => {
+    try {
+      await api.pauseLease(lease.id);
+      if (onActionComplete) onActionComplete();
+    } catch (err: any) {
+      setError(err.message || 'Failed to pause lease');
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      await api.resumeLease(lease.id);
+      if (onActionComplete) onActionComplete();
+    } catch (err: any) {
+      setError(err.message || 'Failed to resume lease');
+    }
+  };
+
   const getStateClass = (state: string) => {
     switch (state) {
       case 'ACTIVE': return 'badge-success';
+      case 'PAUSED': return 'badge-warning';
       case 'PROVISIONING': return 'badge-warning';
       case 'REQUESTED': return 'badge-info';
       case 'EXPIRING': return 'badge-warning';
@@ -124,9 +143,21 @@ export const LeaseCard: React.FC<LeaseCardProps> = ({ lease, isLender, onActionC
           </button>
         )}
 
-        {(lease.state === 'ACTIVE' || lease.state === 'REQUESTED' || lease.state === 'APPROVED') && !isLender && (
+        {lease.state === 'ACTIVE' && !isLender && (
+          <button className="btn btn-warning" onClick={handlePause}>
+            Pause
+          </button>
+        )}
+
+        {lease.state === 'PAUSED' && !isLender && (
+          <button className="btn btn-success" onClick={handleResume}>
+            Resume
+          </button>
+        )}
+
+        {(lease.state === 'ACTIVE' || lease.state === 'PAUSED' || lease.state === 'REQUESTED' || lease.state === 'APPROVED') && !isLender && (
           <button className="btn btn-secondary" onClick={handleEnd}>
-            {lease.state === 'ACTIVE' ? 'End Lease' : 'Cancel Request'}
+            {lease.state === 'ACTIVE' || lease.state === 'PAUSED' ? 'End Lease' : 'Cancel Request'}
           </button>
         )}
 

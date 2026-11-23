@@ -37,8 +37,8 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 6** | **Zero-Trust Network Isolation & WireGuard Egress** | **COMPLETED** ✅ | 73 / 73 Passed | Committed & pushed as `phase 6 completed` |
 | **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **COMPLETED** ✅ | 84 / 84 Passed | Committed & pushed as `phase 7 completed` |
 | **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **COMPLETED** ✅ | 88 / 88 Passed | Committed & pushed as `phase 8 completed` |
-| **Phase 9** | **Marketplace Economics, Credits & Monetization** | **NEXT UP** ⏳ | Pending | Pending |
-| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **PLANNED** ⏳ | Pending | Pending |
+| **Phase 9** | **Marketplace Economics, Credits & Monetization** | **COMPLETED** ✅ | 96 / 96 Passed | Committed & pushed as `phase 9 completed` |
+| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **NEXT UP** ⏳ | Pending | Pending |
 
 ---
 
@@ -260,16 +260,44 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 11. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+## 11. Completed: Phase 9 (Marketplace Economics, Credits & Monetization)
 
-* **Phase 9 (Marketplace Economics & Billing):**
-  * *Why:* Enable fair compute credit exchange between lenders and borrowers with automated per-minute billing and Stripe payouts.
-* **Phase 10 (Kubernetes & Enterprise Hardening):**
+### 11.1 Objectives & Features Completed
+* **Double-Entry Financial Credit Ledger (`BillingService.java`, `Wallet.java`, `WalletTransaction.java`)**:
+  * Introduced user credit wallets (`wallets` table) initialized automatically with **500 free welcome credits**.
+  * Complete transactional double-entry ledger (`wallet_transactions` table) tracking `INITIAL_CREDIT`, `TOPUP`, `COMPUTE_DEBIT`, `COMPUTE_CREDIT`, `TRANSFER`, and `REFUND`.
+  * Concurrent wallet lock safety and zero-sum transactional integrity.
+* **Automated Compute Metering Engine**:
+  * Per-minute compute rate formula:
+    $$\text{Rate (credits/hr)} = (\text{Cores} \times 2) + (\text{RAM}_{\text{GB}} \times 1) + \left(\frac{\text{Disk}_{\text{GB}}}{10}\right)$$
+  * Background scheduler running every minute (`@Scheduled(fixedRate = 60000)`) scanning all `ACTIVE` leases.
+  * Real-time billing debit from borrower wallet and revenue credit to lender wallet.
+  * Graceful auto-termination: Automatically invokes `leaseService.endLease` if borrower credit balance is depleted ($< 1$).
+* **Instant Wallet Top-Up & Pricing Estimator API (`BillingController.java`)**:
+  * `GET /api/wallet`: Retrieve user wallet balance and creation timestamp.
+  * `POST /api/wallet/topup?amount={amount}`: Instantly add compute credits with reference ID.
+  * `GET /api/wallet/transactions`: Retrieve complete paginated financial audit ledger.
+  * `GET /api/billing/estimate?cores={c}&ramMb={m}&diskGb={d}&hours={h}`: Real-time cost estimator for pre-lease budgeting.
+* **Frontend UI Enhancements (`StorageWalletPage.tsx`, `LeaseCard.tsx`)**:
+  * Interactive **Storage & Wallet** hub accessible via top navigation.
+  * Live credit balance display card with instant top-up buttons (+100, +500, +1,000, +5,000 credits).
+  * Interactive pricing calculator showing hourly and per-minute credit burn rates for arbitrary hardware profiles.
+  * Full financial audit transaction table with transaction type badges and formatted timestamps.
+  * Lease cards show real-time pause/resume buttons and `PAUSED` status styling.
+* **Test Verification**:
+  * Added 8 new automated unit and integration tests across server billing layer (`BillingServiceTest`, `BillingControllerTest`).
+  * Total automated test count increased to **96 / 96 passing tests (100% success)**.
+
+---
+
+## 12. Upcoming Phases: High-Level Roadmap & "Why" Rationale
+
+* **Phase 10 (Kubernetes, Production Hardening & Global Orchestration):**
   * *Why:* Deliver full high-availability clustering, Helm deployments, OpenTelemetry tracing, and automated GitHub Actions CI/CD pipelines.
 
 ---
 
-## 12. Verification & Test Metrics Log
+## 13. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
 * **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
@@ -279,6 +307,7 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 * **Phase 6 Tests:** 73 passing tests (including X25519 WireGuard crypto, zero-trust IP/port policy enforcement, WireGuard IP pool allocator, and firewall manager).
 * **Phase 7 Tests:** 84 passing tests (including node reliability scoring, intelligent matchmaking, cryptomining anomaly detection, and automated lease quarantine).
 * **Phase 8 Tests:** 88 passing tests (including persistent storage volumes, S3 snapshot syncing, multi-hypervisor VM pause/resume, and volume REST APIs).
+* **Phase 9 Tests:** 96 passing tests (including credit wallets, double-entry financial ledger, per-minute compute metering, auto-termination on credit exhaustion, and billing REST APIs).
 * **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
   1. Actuator Health (`/actuator/health`) -> `UP`
   2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`
