@@ -32,13 +32,17 @@ spring:
 management:
   health:
     redis:
-      enabled: false
+      enabled: true
     kafka:
-      enabled: false
+      enabled: true
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 minidc:
   jwt-secret: ${MINIDC_JWT_SECRET:change-me-change-me-change-me-32}
   jwt-hours: 12

@@ -39,6 +39,8 @@ public interface LeaseRepository extends JpaRepository<Lease, UUID> {
 
     List<Lease> findByStateAndUpdatedAtBefore(LeaseState state, Instant updatedAt);
 
+    long countByStateIn(Collection<LeaseState> states);
+
     @Query("SELECT l FROM Lease l JOIN Node n ON l.nodeId = n.id WHERE l.state = 'ACTIVE' AND n.status = 'OFFLINE' AND n.lastHeartbeat < :cutoff")
     List<Lease> findActiveOnOfflineNodes(@Param("cutoff") Instant cutoff);
 }

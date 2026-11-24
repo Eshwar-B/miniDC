@@ -12,6 +12,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,7 +31,9 @@ public class MiniDcServerApplication {
     private static final Logger log = LoggerFactory.getLogger(MiniDcServerApplication.class);
 
     public static void main(String[] args) {
-        SpringApplication.run(MiniDcServerApplication.class, args);
+        SpringApplication app = new SpringApplication(MiniDcServerApplication.class);
+        app.setRegisterShutdownHook(true);
+        app.run(args);
     }
 
     @Bean
@@ -62,6 +65,47 @@ public class MiniDcServerApplication {
                 log.info("Password: admin12345");
                 log.info("Startup Invite Code: {}", startupInviteCode);
                 log.info("==================================================");
+            }
+        };
+    }
+
+    @Bean
+    public SmartLifecycle gracefulShutdownLifecycle() {
+        return new SmartLifecycle() {
+            private boolean running = false;
+
+            @Override
+            public void start() {
+                running = true;
+            }
+
+            @Override
+            public void stop() {
+                stop(() -> {});
+            }
+
+            @Override
+            public void stop(Runnable callback) {
+                log.info("Graceful shutdown initiated - completing in-flight operations...");
+                // Allow time for in-flight requests to complete
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                log.info("Graceful shutdown completed");
+                running = false;
+                callback.run();
+            }
+
+            @Override
+            public boolean isRunning() {
+                return running;
+            }
+
+            @Override
+            public int getPhase() {
+                return Integer.MAX_VALUE; // Run last during shutdown
             }
         };
     }

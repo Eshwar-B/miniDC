@@ -1,0 +1,16 @@
+{{- if and .Values.grafana.enabled .Values.grafana.dashboards.enabled }}
+{{- range $name, $config := .Values.grafana.dashboardsConfigMaps }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "minidc.fullname" . }}-{{ $config.name }}
+  labels:
+    {{- include "minidc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana-dashboard
+    {{ .Values.grafana.dashboards.label }}: "1"
+  namespace: {{ .Values.grafana.dashboards.namespace }}
+data:
+  {{ $config.file }}: |{{ getDashboardJson $name | indent 4 }}
+{{- end }}
+{{- end }}

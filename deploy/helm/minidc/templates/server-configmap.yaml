@@ -1,0 +1,82 @@
+{{- if .Values.server.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "minidc.fullname" . }}-server-config
+  labels:
+    {{- include "minidc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+data:
+  application.yml: |
+    server:
+      port: 8080
+    spring:
+      datasource:
+        url: {{ .Values.server.env.SPRING_DATASOURCE_URL | quote }}
+        username: minidc
+        password: {{ .Values.postgresql.auth.password | default "change-me" | quote }}
+      jpa:
+        hibernate:
+          ddl-auto: validate
+        properties:
+          hibernate:
+            jdbc:
+              time_zone: UTC
+      flyway:
+        enabled: true
+      data:
+        redis:
+          host: {{ .Values.server.env.SPRING_DATA_REDIS_HOST }}
+          port: {{ .Values.server.env.SPRING_DATA_REDIS_PORT }}
+          timeout: 1000ms
+      kafka:
+        bootstrap-servers: {{ .Values.server.env.KAFKA_BOOTSTRAP_SERVERS }}
+        consumer:
+          group-id: minidc-server
+          auto-offset-reset: earliest
+          key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        producer:
+          key-serializer: org.apache.kafka.common.serialization.StringSerializer
+          value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    management:
+      health:
+        redis:
+          enabled: true
+        kafka:
+          enabled: true
+      endpoints:
+        web:
+          exposure:
+            include: health,info,prometheus,metrics
+      prometheus:
+        metrics:
+          export:
+            enabled: true
+      otel:
+        traces:
+          exporter: otlp
+        metrics:
+          exporter: prometheus
+        exporter:
+          otlp:
+            endpoint: {{ .Values.server.env.MANAGEMENT_OTEL_EXPORTER_OTLP_ENDPOINT }}
+    minidc:
+      jwt-secret: {{ .Values.server.env.MINDIC_JWT_SECRET | default .Values.server.env.MINIDC_JWT_SECRET | quote }}
+      jwt-hours: 12
+      data-key: {{ .Values.server.env.MINIDC_DATA_KEY | quote }}
+      guac-base-url: {{ .Values.server.env.MINIDC_GUAC_BASE_URL | quote }}
+      guac-json-secret: {{ .Values.server.env.MINIDC_GUAC_SECRET | quote }}
+      max-active-leases-per-user: 1
+      redis:
+        enabled: true
+      rate-limit:
+        enabled: true
+        login-limit-per-minute: 5
+        register-limit-per-minute: 3
+        lease-limit-per-minute: 10
+      kafka:
+        enabled: true
+        bootstrap-servers: {{ .Values.server.env.KAFKA_BOOTSTRAP_SERVERS }}
+        dlq-topic: minidc.dlq
+{{- end }}

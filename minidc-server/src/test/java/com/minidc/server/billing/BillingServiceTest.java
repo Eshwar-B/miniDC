@@ -12,6 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,8 +44,9 @@ class BillingServiceTest {
         nodeRepository = Mockito.mock(NodeRepository.class);
         auditService = Mockito.mock(AuditService.class);
         leaseService = Mockito.mock(LeaseService.class);
+        MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-        billingService = new BillingService(walletRepository, transactionRepository, leaseRepository, nodeRepository, auditService);
+        billingService = new BillingService(walletRepository, transactionRepository, leaseRepository, nodeRepository, auditService, meterRegistry);
         billingService.setLeaseService(leaseService);
     }
 

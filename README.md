@@ -6,7 +6,9 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)]()
 [![React](https://img.shields.io/badge/React-18%20%7C%20Vite%20%7C%20TS-61dafb.svg)]()
 [![Hypervisors](https://img.shields.io/badge/Hypervisors-KVM%20%7C%20VirtualBox%20%7C%20Docker-blueviolet.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-96%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-106%20passing-brightgreen.svg)]()
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm%20%7C%20HPA%20%7C%20Ingress-326ce5.svg)]()
+[![Observability](https://img.shields.io/badge/Observability-Prometheus%20%7C%20Grafana%20%7C%20OpenTelemetry-f39c12.svg)]()
 
 MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - A **lender** installs an **agent** and advertises resource offers (RAM, CPU cores, disk, daily availability window, manual or auto-approve), earning **compute credits** for every active lease minute.
@@ -16,6 +18,7 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - At lease expiration (or when manually ended/killed), the sandbox and all associated ephemeral storage are destroyed.
 - **Persistent storage volumes** allow borrowers to attach reusable encrypted disks across sessions and pause/resume sandboxes seamlessly.
 - **Fair circular economics** automatically meters active leases, transfers credits from borrower to lender, and safeguards compute capacity with automated credit top-up and exhaustion management.
+- **Enterprise Production Hardening (v2.0):** Kubernetes Helm charts with HPA/Ingress/TLS, Prometheus/Grafana observability, OpenTelemetry distributed tracing, GitHub Actions CI/CD, and graceful shutdown resilience.
 
 > 📖 **For complete setup, feature details, and user guides → see [USAGE.md](./USAGE.md)**
 
@@ -23,9 +26,9 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 
 ## 1. Current Project Status
 
-- **Version:** `1.9` — Phases 1–9 complete (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation + AI Matchmaking & Abuse Detection + Persistent Storage Volumes & State Snapshots + Marketplace Economics, Credits & Monetization).
+- **Version:** `2.0` — **All 10 Phases Complete** (Foundation + Guacamole Crypto + Redis Caching & Rate Limiting + Kafka Event Streaming + Real-Time STOMP WebSockets + Zero-Trust Network Isolation + AI Matchmaking & Abuse Detection + Persistent Storage Volumes & State Snapshots + Marketplace Economics, Credits & Monetization + **Production Hardening, Kubernetes & Global Orchestration**).
 - **Core Architecture:** Complete multi-module Maven monorepo + React TypeScript SPA.
-- **Test Suite Status:** **96/96 unit tests passing** (`mvn test` runs in ~25s with 0 errors, 0 failures).
+- **Test Suite Status:** **106/106 unit tests passing** (`mvn test` runs in ~30s with 0 errors, 0 failures).
 - **Frontend Status:** Clean compilation (`npm run build` bundles 66 modules cleanly into static assets).
 - **Live API Tests:** 10/10 end-to-end integration scenarios verified against running server.
 - **Admin Credentials (dev):** `admin@minidc.local` / `admin12345`
@@ -44,8 +47,7 @@ MiniDC turns idle Linux and Windows laptops and PCs into mini datacenters:
 - **AI Matchmaking, Scheduling & Abuse Detection:** Heuristic node reliability scoring (A+ through F), smart multi-factor offer recommendation assistant, real-time cryptomining heuristic detection (pinned 95%+ CPU over 3 windows), and automated lease quarantine.
 - **Persistent Storage Volumes & State Snapshots:** Persistent home volumes (`/home/borrower`), volume attachment mutual exclusion, encrypted S3/MinIO snapshot synchronization, and multi-hypervisor sandbox pause/resume.
 - **Marketplace Economics, Credits & Monetization:** User credit wallets with 500 welcome credits, double-entry financial audit ledger, per-minute automated compute metering, auto-termination on credit exhaustion, and interactive pricing calculator.
-
-> 📖 **Full documentation: [USAGE.md](./USAGE.md)** | Phase tracker: [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+- **Production Observability & Global Orchestration (NEW in v2.0):** Kubernetes Helm charts with Horizontal Pod Autoscaling, Ingress TLS (cert-manager), Prometheus metrics (`/actuator/prometheus`), custom business metrics (leases, nodes, credits, provisioning latency, abuse alerts, financial ledger), Grafana dashboards (Cluster Overview, Telemetry & Anomaly Radar, Financial Ledger), OpenTelemetry distributed tracing (OTLP), GitHub Actions CI/CD (test, build, scan, Helm lint, release), graceful shutdown hooks, Pod Disruption Budgets, Network Policies.
 
 ---
 
@@ -220,7 +222,102 @@ npm run dev
 
 ---
 
-## 5. Hypervisor Configuration
+## 5. Production Kubernetes Deployment (NEW in v2.0)
+
+MiniDC v2.0 includes a complete Helm chart for production-grade Kubernetes deployments.
+
+### Prerequisites
+- Kubernetes cluster v1.28+ (EKS, GKE, AKS, or self-managed)
+- Helm v3.14+
+- cert-manager installed for Let's Encrypt TLS
+- NGINX Ingress Controller
+- Prometheus Operator (for ServiceMonitors)
+- Grafana (for dashboards)
+
+### Quick Install
+
+```bash
+# Add the MiniDC Helm repository (after publishing)
+helm repo add minidc https://eshwar-b.github.io/miniDC
+helm repo update
+
+# Install with production values
+helm install minidc minidc/minidc \
+  --namespace minidc \
+  --create-namespace \
+  -f deploy/helm/minidc/values.yaml \
+  --set postgresql.auth.password="$(openssl rand -base64 32)" \
+  --set server.env.MINIDC_JWT_SECRET="$(openssl rand -base64 32)" \
+  --set server.env.MINIDC_DATA_KEY="$(openssl rand -base64 32)" \
+  --set server.env.MINIDC_GUAC_SECRET="$(openssl rand -hex 16)"
+```
+
+### Key Production Features Enabled
+
+| Feature | Configuration |
+|---------|---------------|
+| **Horizontal Pod Autoscaling** | `server.autoscaling.enabled: true` (CPU 70%, Memory 80%) |
+| **TLS Termination** | `ingress.annotations.cert-manager.io/cluster-issuer: letsencrypt-prod` |
+| **WebSocket Support** | `nginx.ingress.kubernetes.io/websocket-services` annotations |
+| **Prometheus Metrics** | `management.endpoints.web.exposure.include: prometheus` + ServiceMonitor |
+| **OpenTelemetry Tracing** | OTLP exporter to `otel-collector:4317` |
+| **Grafana Dashboards** | ConfigMaps with `grafana_dashboard: "1"` label |
+| **Pod Disruption Budgets** | `minAvailable: 1` for server and UI |
+| **Network Policies** | Restricted inter-component communication |
+| **Security Context** | Non-root (UID 1000), read-only rootfs, dropped capabilities |
+
+### Monitoring Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `https://api.minidc.example.com/actuator/health` | Liveness/Readiness probes |
+| `https://api.minidc.example.com/actuator/prometheus` | Prometheus metrics scrape |
+| `https://api.minidc.example.com/actuator/health/liveness` | Kubernetes liveness probe |
+| `https://api.minidc.example.com/actuator/health/readiness` | Kubernetes readiness probe |
+
+### Grafana Dashboards
+
+Import the pre-built dashboards from `deploy/grafana/dashboards/`:
+- **Cluster Overview** (`minidc-overview.json`): Node health, HTTP rates, active leases, connected nodes, lease states, provisioning latency, API rates
+- **Telemetry & Anomaly Radar** (`minidc-telemetry.json`): CPU/memory per node, abuse alerts, reliability scores, telemetry rates, provisioning percentiles
+- **Financial Ledger** (`minidc-financial.json`): Credits circulation, wallet balances, burn rate, transaction rates, lender earnings, top-up rates
+
+### Configuration Override
+
+Create a custom `values-prod.yaml`:
+
+```yaml
+global:
+  imageRegistry: ghcr.io
+  imagePullSecrets:
+    - name: ghcr-secret
+
+server:
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+postgresql:
+  primary:
+    persistence:
+      size: 100Gi
+
+redis:
+  master:
+    persistence:
+      size: 20Gi
+```
+
+Then deploy: `helm upgrade -i minidc minidc/minidc -n minidc -f values-prod.yaml`
+
+---
+
+## 6. Hypervisor Configuration
 
 The agent chooses its sandbox backend via `minidc.hypervisor` in `application.yml` or the environment variable `MINIDC_HYPERVISOR`:
 

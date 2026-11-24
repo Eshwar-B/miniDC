@@ -27,6 +27,8 @@
         <testcontainers.version>1.19.8</testcontainers.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <micrometer.version>1.13.4</micrometer.version>
+        <otel.version>1.36.0</otel.version>
     </properties>
 
     <dependencyManagement>
@@ -73,6 +75,13 @@
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jjwt.version}</version>
                 <scope>runtime</scope>
+            </dependency>
+
+            <!-- Micrometer & Prometheus -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

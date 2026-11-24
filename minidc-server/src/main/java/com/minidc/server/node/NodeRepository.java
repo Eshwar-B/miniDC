@@ -15,4 +15,5 @@ import java.util.UUID;
 public interface NodeRepository extends JpaRepository<Node, UUID> {
     List<Node> findByOwnerId(UUID ownerId);
     List<Node> findByStatusAndLastHeartbeatBefore(NodeStatus status, Instant cutoff);
+    long countByStatus(NodeStatus status);
 }

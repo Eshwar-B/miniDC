@@ -1,0 +1,21 @@
+{{- if and .Values.server.enabled .Values.server.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "minidc.fullname" . }}-server
+  labels:
+    {{- include "minidc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+  {{- with .Values.server.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.server.ingress.className }}
+  {{- if .Values.server.ingress.tls }}
+  tls:
+    {{- toYaml .Values.server.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- toYaml .Values.server.ingress.hosts | nindent 4 }}
+{{- end }}

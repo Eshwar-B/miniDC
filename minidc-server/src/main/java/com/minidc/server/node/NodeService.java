@@ -85,4 +85,9 @@ public class NodeService {
         auditService.log(ownerId, null, nodeId, "NODE_RESUMED", "Node status changed to ONLINE");
         return nodeRepository.save(node);
     }
+
+    @Transactional(readOnly = true)
+    public long countOnlineNodes() {
+        return nodeRepository.countByStatus(NodeStatus.ONLINE);
+    }
 }

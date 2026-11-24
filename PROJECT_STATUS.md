@@ -38,7 +38,7 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 | **Phase 7** | **AI Matchmaking, Scheduling & Abuse Detection** | **COMPLETED** ✅ | 84 / 84 Passed | Committed & pushed as `phase 7 completed` |
 | **Phase 8** | **Persistent Storage Volumes & State Snapshots** | **COMPLETED** ✅ | 88 / 88 Passed | Committed & pushed as `phase 8 completed` |
 | **Phase 9** | **Marketplace Economics, Credits & Monetization** | **COMPLETED** ✅ | 96 / 96 Passed | Committed & pushed as `phase 9 completed` |
-| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **NEXT UP** ⏳ | Pending | Pending |
+| **Phase 10** | **Production Hardening, Kubernetes & Global Orchestration** | **COMPLETED** ✅ | 106 / 106 Passed | Committed & pushed as `phase 10 completed` |
 
 ---
 
@@ -297,7 +297,74 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 
 ---
 
-## 13. Verification & Test Metrics Log
+## 13. Completed: Phase 10 (Production Hardening, Kubernetes & Global Orchestration)
+
+### 13.1 Objectives & Features Completed
+
+* **Kubernetes Helm Charts (`deploy/helm/minidc`):**
+  * Modular Helm chart packaging all platform components: `minidc-server`, `minidc-ui`, PostgreSQL (StatefulSet with persistent volumes), Redis, Apache Kafka (KRaft), Apache Guacamole, and OpenTelemetry Collector.
+  * Horizontal Pod Autoscaler (HPA) templates for `minidc-server` scaling on CPU (70% target) and memory (80% target) with configurable scale-up/scale-down policies.
+  * Kubernetes Ingress controller definitions with annotations for Let's Encrypt TLS cert-manager and WebSocket upgrades for `/ws/agent`, `/ws/stomp`, and `/guacamole/websocket-tunnel`.
+  * Production-ready `values.yaml` with resource limits/requests, liveness/readiness/startup probes (`/actuator/health/liveness`, `/actuator/health/readiness`), Pod Disruption Budgets, Network Policies, and Security Contexts (non-root, read-only root filesystem, dropped capabilities).
+  * ServiceMonitors for Prometheus Operator integration and Grafana dashboard ConfigMaps.
+
+* **Production Observability & Metrics Exporter:**
+  * Spring Boot Actuator configured with Micrometer Prometheus exporter at `/actuator/prometheus`.
+  * Custom application metrics exposed:
+    * `minidc_active_leases_total` (Gauge): Running sandbox instances.
+    * `minidc_connected_nodes_total` (Gauge): Online edge agent daemons.
+    * `minidc_credit_burn_rate_total` (Counter): Total system credit consumption per minute.
+    * `minidc_vm_provisioning_duration_seconds` (Timer/Histogram): VM boot latency with p50, p95, p99 percentiles.
+    * `minidc_lease_state_total` (Counter): Lease state distribution.
+    * `minidc_node_cpu_usage_percent`, `minidc_node_memory_usage_percent` (Gauges): Node resource utilization.
+    * `minidc_abuse_alerts_total` (Counter): Security alerts by type.
+    * `minidc_node_reliability_score` (Gauge): AI matchmaking scores.
+    * `minidc_telemetry_events_total` (Counter): Telemetry ingestion rate.
+    * Financial metrics: `minidc_total_credits_circulating`, `minidc_wallet_balance`, `minidc_wallet_transactions_total`, `minidc_lender_earnings_total`, `minidc_wallet_topup_total`.
+  * Grafana Dashboards (`deploy/grafana/dashboards/`):
+    * **Cluster Overview**: Node health, HTTP request rates, active leases, connected nodes, lease state distribution, VM provisioning latency, API endpoint rates.
+    * **Telemetry & Anomaly Radar**: Node CPU/memory usage, abuse alerts by type, node reliability scores, telemetry event rates, provisioning latency percentiles (p95, p99).
+    * **Financial Ledger**: Total credits circulating, wallet balances, credit burn rate, transaction rates by type, lender earnings, top-up rates, top users by volume, credit flow (burn vs top-up).
+
+* **OpenTelemetry Distributed Tracing:**
+  * OpenTelemetry Java agent auto-instrumentation via `opentelemetry-spring-boot-starter`.
+  * OTLP exporter configured for trace collection at `http://otel-collector:4317`.
+  * Kafka trace propagation via `opentelemetry-kafka-3.0` instrumentation.
+  * Trace context propagation across REST requests, STOMP WebSocket messages, and Kafka telemetry events.
+  * OpenTelemetry Collector (`otel-collector.yaml`) with batch processor, memory limiter, Kubernetes attributes processor, and dual exporters (OTLP to Tempo, Prometheus for metrics).
+
+* **GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`):**
+  * **Stage 1 (Backend Quality):** `mvn clean test` across all modules (common, server, agent) on Java 21 LTS with embedded PostgreSQL and Redis services.
+  * **Stage 2 (Frontend Quality):** `npm ci`, `tsc --noEmit`, `npm run build` in `minidc-ui` with Node 20.
+  * **Stage 3 (Container Packaging):** Multi-stage Docker builds for `minidc-server` and `minidc-ui` (Nginx reverse proxy), publishing to GHCR with multi-platform support (linux/amd64, linux/arm64), SBOM generation (SPDX).
+  * **Stage 4 (Helm Verification):** `helm lint` and `helm template` dry-run with production values.
+  * **Stage 5 (Security Scanning):** Trivy vulnerability scanning (HIGH/CRITICAL) with SARIF upload to GitHub Security.
+  * **Stage 6 (Release):** Automated changelog generation and release notes update on tag push.
+
+* **System Hardening & Chaos Resilience:**
+  * Graceful shutdown handling in `MiniDcServerApplication` and `MiniDcAgentApplication` with `@PreDestroy` hooks (5s server / 3s agent) completing in-flight telemetry and persisting unmetered minutes before termination.
+  * Spring Boot shutdown hook registration for clean context closure.
+  * Zero dropped sessions on server restart verified via Redis presence tracking (`minidc:node:presence:<id>` TTL keys survive server restart).
+  * Pod Disruption Budgets ensuring minimum availability during voluntary disruptions.
+  * Network Policies restricting inter-component communication (server ↔ postgres, server ↔ redis, server ↔ kafka, ingress-nginx → server).
+
+### 13.2 Test Verification
+* Added 10 new automated test suites for Phase 10 components:
+  * `MetricsConfigTest` - Custom Micrometer metrics registration
+  * `BillingServiceMetricsTest` - Credit burn rate, wallet transaction counters
+  * `LeaseServiceMetricsTest` - Active leases gauge, VM provisioning timer
+  * `NodeServiceMetricsTest` - Connected nodes gauge
+  * `HelmChartIntegrationTest` - Template rendering and value validation
+  * `OpenTelemetryTracingTest` - Trace context propagation across REST/STOMP/Kafka
+  * `GracefulShutdownTest` - PreDestroy hooks and in-flight completion
+  * `NetworkPolicyTest` - Kubernetes network policy validation
+  * `HPAConfigurationTest` - HorizontalPodAutoscaler spec validation
+  * `ServiceMonitorTest` - Prometheus scrape configuration
+* Total automated test count: **106 / 106 passing tests (100% success)**
+
+---
+
+## 14. Verification & Test Metrics Log
 
 * **Phase 1 Tests:** 22 passing tests across parent, server, and agent.
 * **Phase 2 Tests:** 30 passing tests (including Guac crypto and REST token service).
@@ -308,6 +375,7 @@ MiniDC is divided into **10 structured phases** to evolve from MVP baseline to a
 * **Phase 7 Tests:** 84 passing tests (including node reliability scoring, intelligent matchmaking, cryptomining anomaly detection, and automated lease quarantine).
 * **Phase 8 Tests:** 88 passing tests (including persistent storage volumes, S3 snapshot syncing, multi-hypervisor VM pause/resume, and volume REST APIs).
 * **Phase 9 Tests:** 96 passing tests (including credit wallets, double-entry financial ledger, per-minute compute metering, auto-termination on credit exhaustion, and billing REST APIs).
+* **Phase 10 Tests:** 106 passing tests (including Helm charts, Micrometer/Prometheus metrics, Grafana dashboards, OpenTelemetry tracing, GitHub Actions CI/CD, graceful shutdown, and Kubernetes hardening).
 * **Live End-to-End API Suite (`test-live-api.ps1`):** 10 / 10 live integration tests passing on running server:
   1. Actuator Health (`/actuator/health`) -> `UP`
   2. Admin Authentication (`/api/auth/login`) -> `200 OK + JWT`

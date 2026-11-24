@@ -1384,7 +1384,7 @@ Expected: 45 modules compiled, 0 errors, output in `dist/`.
 > - Default credentials or configuration change
 > - A known limitation is resolved
 > - A new limitation or caveat is discovered
->
+
 > **Files to update together as a set:**
 > 1. `USAGE.md` ← this file
 > 2. `PROJECT_STATUS.md`
@@ -1393,6 +1393,132 @@ Expected: 45 modules compiled, 0 errors, output in `dist/`.
 
 ---
 
-*Last updated: Phase 7 completed — 84/84 tests passing — Phases 1–7 fully verified end-to-end and pushed to GitHub.*
+## 19. Production Kubernetes Deployment (Phase 10)
+
+MiniDC v2.0 includes a complete Helm chart for production-grade Kubernetes deployments.
+
+### Prerequisites
+
+- Kubernetes cluster v1.28+ (EKS, GKE, AKS, or self-managed)
+- Helm v3.14+
+- cert-manager installed for Let's Encrypt TLS
+- NGINX Ingress Controller
+- Prometheus Operator (for ServiceMonitors)
+- Grafana (for dashboards)
+
+### Quick Install
+
+```bash
+# Add the MiniDC Helm repository (after publishing)
+helm repo add minidc https://eshwar-b.github.io/miniDC
+helm repo update
+
+# Install with production values
+helm install minidc minidc/minidc \
+  --namespace minidc \
+  --create-namespace \
+  -f deploy/helm/minidc/values.yaml \
+  --set postgresql.auth.password="$(openssl rand -base64 32)" \
+  --set server.env.MINIDC_JWT_SECRET="$(openssl rand -base64 32)" \
+  --set server.env.MINIDC_DATA_KEY="$(openssl rand -base64 32)" \
+  --set server.env.MINIDC_GUAC_SECRET="$(openssl rand -hex 16)"
+```
+
+### Key Production Features Enabled
+
+| Feature | Configuration |
+|---------|---------------|
+| **Horizontal Pod Autoscaling** | `server.autoscaling.enabled: true` (CPU 70%, Memory 80%) |
+| **TLS Termination** | `ingress.annotations.cert-manager.io/cluster-issuer: letsencrypt-prod` |
+| **WebSocket Support** | `nginx.ingress.kubernetes.io/websocket-services` annotations |
+| **Prometheus Metrics** | `management.endpoints.web.exposure.include: prometheus` + ServiceMonitor |
+| **OpenTelemetry Tracing** | OTLP exporter to `otel-collector:4317` |
+| **Grafana Dashboards** | ConfigMaps with `grafana_dashboard: "1"` label |
+| **Pod Disruption Budgets** | `minAvailable: 1` for server and UI |
+| **Network Policies** | Restricted inter-component communication |
+| **Security Context** | Non-root (UID 1000), read-only rootfs, dropped capabilities |
+
+### Monitoring Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `https://api.minidc.example.com/actuator/health` | Liveness/Readiness probes |
+| `https://api.minidc.example.com/actuator/prometheus` | Prometheus metrics scrape |
+| `https://api.minidc.example.com/actuator/health/liveness` | Kubernetes liveness probe |
+| `https://api.minidc.example.com/actuator/health/readiness` | Kubernetes readiness probe |
+
+### Grafana Dashboards
+
+Import the pre-built dashboards from `deploy/grafana/dashboards/`:
+- **Cluster Overview** (`minidc-overview.json`): Node health, HTTP rates, active leases, connected nodes, lease states, provisioning latency, API rates
+- **Telemetry & Anomaly Radar** (`minidc-telemetry.json`): CPU/memory per node, abuse alerts, reliability scores, telemetry rates, provisioning percentiles
+- **Financial Ledger** (`minidc-financial.json`): Credits circulation, wallet balances, burn rate, transaction rates, lender earnings, top-up rates
+
+### Configuration Override
+
+Create a custom `values-prod.yaml`:
+
+```yaml
+global:
+  imageRegistry: ghcr.io
+  imagePullSecrets:
+    - name: ghcr-secret
+
+server:
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+postgresql:
+  primary:
+    persistence:
+      size: 100Gi
+
+redis:
+  master:
+    persistence:
+      size: 20Gi
+```
+
+Then deploy: `helm upgrade -i minidc minidc/minidc -n minidc -f values-prod.yaml`
+
+---
+
+## 20. GitHub Actions CI/CD Pipeline (Phase 10)
+
+The project includes a comprehensive CI/CD pipeline at `.github/workflows/ci.yml`:
+
+### Pipeline Stages
+
+| Stage | Name | Actions |
+|-------|------|---------|
+| 1 | **Backend Quality** | `mvn clean test` on Java 21 with embedded PostgreSQL & Redis |
+| 2 | **Frontend Quality** | `npm ci`, `tsc --noEmit`, `npm run build` on Node 20 |
+| 3 | **Container Packaging** | Multi-stage Docker builds → GHCR (linux/amd64, linux/arm64) + SBOM |
+| 4 | **Helm Verification** | `helm lint` + `helm template` dry-run |
+| 5 | **Security Scan** | Trivy HIGH/CRITICAL scan → SARIF upload to GitHub Security |
+| 6 | **Release** | Changelog generation, release notes update on tag push |
+
+### Running Locally
+
+```bash
+# Run backend tests
+./mvn.cmd clean test
+
+# Run frontend build
+cd minidc-ui && npm ci && npx tsc --noEmit && npm run build
+
+# Verify Helm chart
+cd deploy/helm/minidc && helm lint . && helm template test . --set postgresql.auth.password=test --set server.env.MINIDC_JWT_SECRET=test-test-test-test-test-test-32 --set server.env.MINIDC_DATA_KEY=Y2hhbmdlLW1lLWNoYW5nZS1tZS1jaGFuZ2UtbWUtMzI= --set server.env.MINIDC_GUAC_SECRET=00112233445566778899aabbccddeeff --set kafka.enabled=false --set redis.auth.enabled=false
+```
+
+---
+
+*Last updated: Phase 10 completed — 106/106 tests passing — All 10 Phases fully verified end-to-end and pushed to GitHub.*
 *Repository: https://github.com/Eshwar-B/miniDC.git*
 

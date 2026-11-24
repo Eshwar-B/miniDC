@@ -459,4 +459,9 @@ public class LeaseService {
         }
         return leaseRepository.findByNodeIdIn(nodeIds);
     }
+
+    @Transactional(readOnly = true)
+    public long countActiveLeases() {
+        return leaseRepository.countByStateIn(List.of(ACTIVE, PROVISIONING, EXPIRING));
+    }
 }

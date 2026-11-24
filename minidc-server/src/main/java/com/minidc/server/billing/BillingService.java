@@ -21,6 +21,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+
 /**
  * Peer-to-peer compute credit metering, double-entry ledger billing, and balance enforcement.
  */
@@ -34,6 +37,11 @@ public class BillingService {
     private final LeaseRepository leaseRepository;
     private final NodeRepository nodeRepository;
     private final AuditService auditService;
+    private final MeterRegistry meterRegistry;
+    private final Counter creditBurnRateCounter;
+    private final Counter walletTransactionsCounter;
+    private final Counter lenderEarningsCounter;
+    private final Counter walletTopupCounter;
 
     @Autowired
     @Lazy
@@ -44,13 +52,31 @@ public class BillingService {
             WalletTransactionRepository transactionRepository,
             LeaseRepository leaseRepository,
             NodeRepository nodeRepository,
-            AuditService auditService
+            AuditService auditService,
+            MeterRegistry meterRegistry
     ) {
         this.walletRepository = walletRepository;
         this.transactionRepository = transactionRepository;
         this.leaseRepository = leaseRepository;
         this.nodeRepository = nodeRepository;
         this.auditService = auditService;
+        this.meterRegistry = meterRegistry;
+        this.creditBurnRateCounter = Counter.builder("minidc_credit_burn_rate_total")
+                .description("Total credits burned per minute across all active leases")
+                .tag("component", "billing")
+                .register(meterRegistry);
+        this.walletTransactionsCounter = Counter.builder("minidc_wallet_transactions_total")
+                .description("Total wallet transactions by type")
+                .tag("component", "billing")
+                .register(meterRegistry);
+        this.lenderEarningsCounter = Counter.builder("minidc_lender_earnings_total")
+                .description("Total earnings credited to lenders")
+                .tag("component", "billing")
+                .register(meterRegistry);
+        this.walletTopupCounter = Counter.builder("minidc_wallet_topup_total")
+                .description("Total wallet top-up transactions")
+                .tag("component", "billing")
+                .register(meterRegistry);
     }
 
     public void setLeaseService(LeaseService leaseService) {
@@ -116,6 +142,8 @@ public class BillingService {
         );
         transactionRepository.save(tx);
         auditService.log(userId, null, null, "WALLET_TOPUP", "Added " + amountCredits + " credits");
+        walletTopupCounter.increment();
+        walletTransactionsCounter.increment();
         return new WalletInfo(saved.getId(), saved.getUserId(), saved.getBalanceCredits(), saved.getCreatedAt(), saved.getUpdatedAt());
     }
 
@@ -186,7 +214,12 @@ public class BillingService {
                     "Compute rental income for lease " + lease.getVmName(),
                     Instant.now()
             ));
+            lenderEarningsCounter.increment();
+            walletTransactionsCounter.increment();
         }
+
+        creditBurnRateCounter.increment(rate);
+        walletTransactionsCounter.increment();
     }
 
     @Scheduled(fixedRate = 60000)
@@ -215,5 +248,19 @@ public class BillingService {
                         tx.getCreatedAt()
                 ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalCreditsInCirculation() {
+        return walletRepository.findAll().stream()
+                .mapToLong(Wallet::getBalanceCredits)
+                .sum();
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalWalletBalance() {
+        return walletRepository.findAll().stream()
+                .mapToLong(Wallet::getBalanceCredits)
+                .sum();
     }
 }

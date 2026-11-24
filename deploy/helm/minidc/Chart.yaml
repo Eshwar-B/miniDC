@@ -1,0 +1,18 @@
+apiVersion: v2
+name: minidc
+description: MiniDC - Idle Laptop Sandbox Lease Platform Helm Chart
+type: application
+version: 2.0.0
+appVersion: "2.0.0"
+keywords:
+  - sandbox
+  - compute
+  - marketplace
+  - kubernetes
+  - guacamole
+home: https://github.com/Eshwar-B/miniDC
+sources:
+  - https://github.com/Eshwar-B/miniDC
+maintainers:
+  - name: MiniDC Team
+    email: support@minidc.local

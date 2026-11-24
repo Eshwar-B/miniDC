@@ -54,6 +54,12 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
+        <!-- Micrometer & Prometheus -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
